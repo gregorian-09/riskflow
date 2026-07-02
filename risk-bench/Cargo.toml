@@ -17,3 +17,6 @@ workspace = true
 [[bench]]
 name = "evaluate"
 harness = false
+
+[dev-dependencies]
+criterion = "0.5.1"
