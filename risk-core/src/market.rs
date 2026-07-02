@@ -2,6 +2,8 @@
 
 use std::collections::HashMap;
 
+use of_core::DataQualityFlags;
+
 use crate::{
     currency::CurrencyPair,
     types::{InstrumentId, Notional, Price, Timestamp},
@@ -42,16 +44,18 @@ impl RiskDataQualityFlags {
 }
 
 /// Combined upstream and risk-local market data quality.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DataQuality {
-    /// Raw upstream quality flags.
-    ///
-    /// This is reserved for `of_core::DataQualityFlags` once the external
-    /// dependency is wired in. Keeping it as raw bits for the first slice avoids
-    /// inventing a competing upstream flag taxonomy.
-    pub upstream_bits: u32,
+    /// Upstream Orderflow data-quality flags.
+    pub upstream_flags: DataQualityFlags,
     /// Risk-specific quality flags not represented upstream.
     pub risk_flags: RiskDataQualityFlags,
+}
+
+impl Default for DataQuality {
+    fn default() -> Self {
+        Self::clean()
+    }
 }
 
 impl DataQuality {
@@ -59,15 +63,24 @@ impl DataQuality {
     #[must_use]
     pub const fn clean() -> Self {
         Self {
-            upstream_bits: 0,
+            upstream_flags: DataQualityFlags::NONE,
+            risk_flags: RiskDataQualityFlags::EMPTY,
+        }
+    }
+
+    /// Creates data quality from upstream Orderflow flags.
+    #[must_use]
+    pub const fn from_upstream(upstream_flags: DataQualityFlags) -> Self {
+        Self {
+            upstream_flags,
             risk_flags: RiskDataQualityFlags::EMPTY,
         }
     }
 
     /// Returns whether no quality flags are set.
     #[must_use]
-    pub const fn is_clean(self) -> bool {
-        self.upstream_bits == 0 && !self.risk_flags.any()
+    pub fn is_clean(self) -> bool {
+        self.upstream_flags.bits() == 0 && !self.risk_flags.any()
     }
 }
 
@@ -230,4 +243,33 @@ fn trusted_market_price(
     }
 
     Ok(price.price)
+}
+
+#[cfg(test)]
+mod tests {
+    use of_core::DataQualityFlags;
+
+    use crate::{
+        market::{DataQuality, MarketPrice, MarketSnapshot},
+        types::{InstrumentId, Price, Timestamp},
+        verdict::IndeterminateReason,
+    };
+
+    #[test]
+    fn upstream_quality_flags_fail_closed() {
+        let mut market = MarketSnapshot::new(10, 10, 10);
+        market.insert_price(
+            InstrumentId(1),
+            MarketPrice {
+                price: Price::new(100),
+                observed_at: Timestamp(5),
+                quality: DataQuality::from_upstream(DataQualityFlags::STALE_FEED),
+            },
+        );
+
+        assert_eq!(
+            market.trusted_price(InstrumentId(1), Timestamp(10)),
+            Err(IndeterminateReason::BadDataQuality)
+        );
+    }
 }

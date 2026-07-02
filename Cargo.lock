@@ -3,6 +3,21 @@
 version = 4
 
 [[package]]
+name = "arc-swap"
+version = "1.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c049c0be4daef0b145cb3555416b3b8ef5b7888a38aea1a3a155801fe7b0810b"
+dependencies = [
+ "rustversion",
+]
+
+[[package]]
+name = "of_core"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "864acb1d7d0ab9f591569785cee2445ea3a847e3e74db01bc550bf43361804db"
+
+[[package]]
 name = "risk-bench"
 version = "0.1.0"
 dependencies = [
@@ -13,6 +28,9 @@ dependencies = [
 [[package]]
 name = "risk-core"
 version = "0.1.0"
+dependencies = [
+ "of_core",
+]
 
 [[package]]
 name = "risk-portfolio"
@@ -25,5 +43,12 @@ dependencies = [
 name = "risk-pretrade"
 version = "0.1.0"
 dependencies = [
+ "arc-swap",
  "risk-core",
 ]
+
+[[package]]
+name = "rustversion"
+version = "1.0.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"

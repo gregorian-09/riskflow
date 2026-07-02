@@ -5,24 +5,7 @@ use std::{collections::HashMap, error::Error, fmt};
 use crate::{types::InstrumentId, verdict::IndeterminateReason};
 
 /// Allocating external symbol key used only outside the pretrade hot path.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SymbolKey {
-    /// Venue code.
-    pub venue: String,
-    /// Venue-native symbol.
-    pub symbol: String,
-}
-
-impl SymbolKey {
-    /// Creates a symbol key.
-    #[must_use]
-    pub fn new(venue: impl Into<String>, symbol: impl Into<String>) -> Self {
-        Self {
-            venue: venue.into(),
-            symbol: symbol.into(),
-        }
-    }
-}
+pub use of_core::SymbolId as SymbolKey;
 
 /// Symbol-to-instrument registry built before order evaluation starts.
 #[derive(Debug, Clone, Default)]
@@ -111,7 +94,10 @@ mod tests {
     #[test]
     fn registry_resolves_registered_symbol() {
         let mut registry = SymbolRegistry::new();
-        let symbol = SymbolKey::new("XNYS", "IBM");
+        let symbol = SymbolKey {
+            venue: "XNYS".to_owned(),
+            symbol: "IBM".to_owned(),
+        };
 
         registry.register(symbol.clone(), InstrumentId(7)).unwrap();
 
@@ -122,7 +108,10 @@ mod tests {
     #[test]
     fn unknown_symbol_fails_closed() {
         let registry = SymbolRegistry::new();
-        let symbol = SymbolKey::new("XNYS", "IBM");
+        let symbol = SymbolKey {
+            venue: "XNYS".to_owned(),
+            symbol: "IBM".to_owned(),
+        };
 
         assert_eq!(
             registry.resolve(&symbol),

@@ -2,6 +2,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
+use arc_swap::ArcSwap;
 use risk_core::{
     Instrument, InstrumentId, MarketSnapshot, Notional, Price, Qty, RiskVerdict, RiskWeight,
     Timestamp,
@@ -88,9 +89,9 @@ pub struct EvaluateRequest<'a> {
 }
 
 /// Synchronous pretrade risk gate.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PretradeGate {
-    limits: Arc<LimitTable>,
+    limits: ArcSwap<LimitTable>,
 }
 
 impl PretradeGate {
@@ -98,21 +99,21 @@ impl PretradeGate {
     #[must_use]
     pub fn new(limits: LimitTable) -> Self {
         Self {
-            limits: Arc::new(limits),
+            limits: ArcSwap::from_pointee(limits),
         }
     }
 
     /// Replaces the active limit table snapshot.
-    ///
-    /// This is intentionally isolated so the implementation can move to
-    /// `ArcSwap<LimitTable>` without changing check logic.
-    pub fn update_limits(&mut self, limits: LimitTable) {
-        self.limits = Arc::new(limits);
+    pub fn update_limits(&self, limits: LimitTable) {
+        self.limits.store(Arc::new(limits));
     }
 
     /// Evaluates an order request.
     #[must_use]
     pub fn evaluate(&self, request: EvaluateRequest<'_>) -> RiskVerdict {
+        let limits = self.limits.load();
+        let limits = &**limits;
+
         match request
             .instrument
             .risk_weight(request.qty, request.market, request.now)
@@ -120,24 +121,19 @@ impl PretradeGate {
             RiskWeight::Linear(order_notional) => {
                 let instrument_id = request.instrument.id();
 
-                let verdict =
-                    notional::check_per_order(&self.limits, instrument_id, order_notional);
+                let verdict = notional::check_per_order(limits, instrument_id, order_notional);
                 if !verdict.is_pass() {
                     return verdict;
                 }
 
-                let verdict = aggregate_notional::check(
-                    &self.limits,
-                    request.market,
-                    request.now,
-                    order_notional,
-                );
+                let verdict =
+                    aggregate_notional::check(limits, request.market, request.now, order_notional);
                 if !verdict.is_pass() {
                     return verdict;
                 }
 
                 let verdict = position_limit::check(
-                    &self.limits,
+                    limits,
                     instrument_id,
                     request.current_position,
                     request.qty,
@@ -147,7 +143,7 @@ impl PretradeGate {
                 }
 
                 fat_finger::check(
-                    &self.limits,
+                    limits,
                     instrument_id,
                     request.order_price,
                     request.market,
