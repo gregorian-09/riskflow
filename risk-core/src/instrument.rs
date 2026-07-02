@@ -1,5 +1,7 @@
 //! Instrument taxonomy and risk exposure behavior.
 
+use std::{collections::HashMap, error::Error, fmt};
+
 use crate::{
     currency::CurrencyId,
     market::MarketSnapshot,
@@ -106,6 +108,68 @@ pub enum Instrument {
     /// Option placeholder; unpriced in v1.
     Option(OptionSpec),
 }
+
+/// Startup-loaded instrument reference data.
+#[derive(Debug, Clone, Default)]
+pub struct InstrumentCatalog {
+    by_id: HashMap<InstrumentId, Instrument>,
+}
+
+impl InstrumentCatalog {
+    /// Creates an empty instrument catalog.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Inserts an instrument, rejecting duplicate instrument ids.
+    pub fn insert(&mut self, instrument: Instrument) -> Result<(), InstrumentCatalogError> {
+        let instrument_id = instrument.id();
+        if self.by_id.contains_key(&instrument_id) {
+            return Err(InstrumentCatalogError::DuplicateInstrumentId(instrument_id));
+        }
+
+        self.by_id.insert(instrument_id, instrument);
+        Ok(())
+    }
+
+    /// Returns an instrument by id.
+    #[must_use]
+    pub fn get(&self, instrument_id: InstrumentId) -> Option<Instrument> {
+        self.by_id.get(&instrument_id).copied()
+    }
+
+    /// Returns the number of instruments in the catalog.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.by_id.len()
+    }
+
+    /// Returns whether the catalog is empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.by_id.is_empty()
+    }
+}
+
+/// Instrument catalog construction error.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InstrumentCatalogError {
+    /// Instrument id was already inserted.
+    DuplicateInstrumentId(InstrumentId),
+}
+
+impl fmt::Display for InstrumentCatalogError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::DuplicateInstrumentId(instrument_id) => {
+                write!(f, "duplicate instrument id {}", instrument_id.raw())
+            }
+        }
+    }
+}
+
+impl Error for InstrumentCatalogError {}
 
 impl Instrument {
     /// Returns the instrument identity.
@@ -249,7 +313,9 @@ impl CurrencySet {
 mod tests {
     use crate::{
         CurrencyId,
-        instrument::{EquitySpec, Instrument, OptionSpec},
+        instrument::{
+            EquitySpec, Instrument, InstrumentCatalog, InstrumentCatalogError, OptionSpec,
+        },
         market::{MarketPrice, MarketSnapshot},
         types::{InstrumentId, Price, Qty, Timestamp},
         verdict::{IndeterminateReason, RiskWeight},
@@ -287,5 +353,25 @@ mod tests {
             equity.risk_weight(Qty::new(2), &market, Timestamp(10)),
             RiskWeight::Linear(crate::Notional::new(100))
         );
+    }
+
+    #[test]
+    fn catalog_rejects_duplicate_instrument_ids() {
+        let equity = Instrument::Equity(EquitySpec {
+            instrument_id: InstrumentId(1),
+            settlement_currency: CurrencyId(840),
+        });
+        let mut catalog = InstrumentCatalog::new();
+
+        catalog.insert(equity).unwrap();
+
+        assert_eq!(
+            catalog.insert(equity),
+            Err(InstrumentCatalogError::DuplicateInstrumentId(InstrumentId(
+                1
+            )))
+        );
+        assert_eq!(catalog.get(InstrumentId(1)), Some(equity));
+        assert_eq!(catalog.len(), 1);
     }
 }

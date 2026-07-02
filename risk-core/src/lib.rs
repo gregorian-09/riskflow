@@ -18,7 +18,7 @@ pub mod verdict;
 pub use currency::{CurrencyId, CurrencyPair};
 pub use instrument::{
     AssetClass, CryptoSpotSpec, CurrencySet, EquitySpec, FutureSpec, FxSpec, Instrument,
-    OptionSpec, PerpSpec,
+    InstrumentCatalog, InstrumentCatalogError, OptionSpec, PerpSpec,
 };
 pub use market::{DataQuality, MarketPrice, MarketSnapshot, RiskDataQualityFlags};
 pub use position::{Funding, MarginState, Position};

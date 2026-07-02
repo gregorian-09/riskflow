@@ -28,7 +28,7 @@ impl SymbolKey {
 #[derive(Debug, Clone, Default)]
 pub struct SymbolRegistry {
     by_symbol: HashMap<SymbolKey, InstrumentId>,
-    by_id: Vec<SymbolKey>,
+    by_id: Vec<Option<SymbolKey>>,
 }
 
 impl SymbolRegistry {
@@ -52,15 +52,14 @@ impl SymbolRegistry {
         }
 
         if self.by_id.len() <= id_index {
-            self.by_id
-                .resize_with(id_index + 1, || SymbolKey::new("", ""));
+            self.by_id.resize_with(id_index + 1, || None);
         }
 
-        if !self.by_id[id_index].venue.is_empty() || !self.by_id[id_index].symbol.is_empty() {
+        if self.by_id[id_index].is_some() {
             return Err(RegisterSymbolError::DuplicateInstrumentId);
         }
 
-        self.by_id[id_index] = symbol.clone();
+        self.by_id[id_index] = Some(symbol.clone());
         self.by_symbol.insert(symbol, instrument_id);
         Ok(())
     }
@@ -77,9 +76,7 @@ impl SymbolRegistry {
     #[must_use]
     pub fn symbol_for(&self, instrument_id: InstrumentId) -> Option<&SymbolKey> {
         let id_index = usize::try_from(instrument_id.raw()).ok()?;
-        self.by_id
-            .get(id_index)
-            .filter(|symbol| !symbol.venue.is_empty() || !symbol.symbol.is_empty())
+        self.by_id.get(id_index).and_then(Option::as_ref)
     }
 }
 
