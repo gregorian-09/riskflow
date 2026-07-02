@@ -1,0 +1,19 @@
+[package]
+name = "risk-bench"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Benchmark harnesses for the Risk workspace."
+publish = false
+
+[dependencies]
+risk-core = { path = "../risk-core" }
+risk-pretrade = { path = "../risk-pretrade" }
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "evaluate"
+harness = false

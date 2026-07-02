@@ -1,0 +1,13 @@
+[package]
+name = "risk-pretrade"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Synchronous pretrade risk gate built on risk-core types."
+
+[dependencies]
+risk-core = { path = "../risk-core" }
+
+[lints]
+workspace = true

@@ -1,0 +1,12 @@
+[package]
+name = "risk-core"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Shared fixed-point risk types, instruments, positions, and market snapshots."
+
+[dependencies]
+
+[lints]
+workspace = true
