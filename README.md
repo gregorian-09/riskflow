@@ -41,5 +41,8 @@ cargo bench -p risk-bench --bench evaluate -- --test
 cargo run -p risk-bench --release -- --iterations 50000
 ```
 
+Benchmark reporting methodology lives in `docs/benchmarks.md`; named constants
+and test fixture values are documented in `docs/constants.md`.
+
 The CI workflow also checks that `risk-pretrade` and `risk-portfolio` do not
 depend on `risk-options`.

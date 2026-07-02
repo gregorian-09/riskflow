@@ -5,11 +5,18 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 readme.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Offline portfolio risk analytics built on risk-core types."
 
 [dependencies]
 nalgebra = "0.33.3"
-risk-core = { path = "../risk-core" }
+pyo3 = { version = "0.29.0", features = ["macros"], optional = true }
+risk-core = { version = "0.1.0", path = "../risk-core" }
 
 [lints]
 workspace = true
+
+[features]
+python = ["dep:pyo3"]

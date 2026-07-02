@@ -13,6 +13,10 @@
 //! ratios, drawdown metrics, and trusted cross-currency netting helpers.
 //! Options Greeks stay out of this crate until the isolated options layer
 //! exists.
+//!
+//! # Features
+//!
+//! - `python`: enables optional `pyo3` bindings for notebook consumers.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -21,4 +25,6 @@ pub mod covariance;
 pub mod greeks;
 pub mod netting;
 pub mod performance;
+#[cfg(feature = "python")]
+pub mod python;
 pub mod var;

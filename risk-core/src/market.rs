@@ -10,6 +10,8 @@ use crate::{
     verdict::IndeterminateReason,
 };
 
+const BASIS_POINTS_PER_UNIT: i128 = 10_000;
+
 /// Risk-specific market data quality flags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct RiskDataQualityFlags(u32);
@@ -296,7 +298,7 @@ fn prices_agree(
 
     let deviation = (primary - secondary).abs();
     let deviation_bps = deviation
-        .checked_mul(10_000)
+        .checked_mul(BASIS_POINTS_PER_UNIT)
         .ok_or(IndeterminateReason::ArithmeticOverflow)?
         / denominator;
 

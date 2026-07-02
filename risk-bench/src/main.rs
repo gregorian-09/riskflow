@@ -18,6 +18,8 @@ use risk_core::{
 use risk_pretrade::{EvaluateRequest, LimitTable, PretradeGate};
 
 const DEFAULT_ITERATIONS: usize = 50_000;
+const MEDIAN_PER_MILLE: usize = 500;
+const P99_9_PER_MILLE: usize = 999;
 
 fn main() {
     let iterations = parse_iterations().unwrap_or(DEFAULT_ITERATIONS);
@@ -106,8 +108,8 @@ fn evaluate_once(gate: &PretradeGate, instrument: Instrument, market: &MarketSna
 }
 
 fn print_stats(name: &str, samples: &[Duration]) {
-    let median = percentile(samples, 500);
-    let p999 = percentile(samples, 999);
+    let median = percentile(samples, MEDIAN_PER_MILLE);
+    let p999 = percentile(samples, P99_9_PER_MILLE);
 
     println!("{name}.median_ns: {}", median.as_nanos());
     println!("{name}.p99_9_ns: {}", p999.as_nanos());

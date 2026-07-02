@@ -5,11 +5,14 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 readme.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Synchronous pretrade risk gate built on risk-core types."
 
 [dependencies]
 arc-swap = "1.7.1"
-risk-core = { path = "../risk-core" }
+risk-core = { version = "0.1.0", path = "../risk-core" }
 
 [lints]
 workspace = true

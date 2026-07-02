@@ -4,12 +4,13 @@ version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 description = "Benchmark harnesses for the Risk workspace."
 publish = false
 
 [dependencies]
-risk-core = { path = "../risk-core" }
-risk-pretrade = { path = "../risk-pretrade" }
+risk-core = { version = "0.1.0", path = "../risk-core" }
+risk-pretrade = { version = "0.1.0", path = "../risk-pretrade" }
 
 [lints]
 workspace = true

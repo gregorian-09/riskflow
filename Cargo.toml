@@ -12,6 +12,9 @@ edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
+repository = "https://github.com/gregorian-rayne/risk-crate"
+keywords = ["risk", "trading", "portfolio", "pretrade", "quant"]
+categories = ["finance", "mathematics"]
 
 [workspace.lints.rust]
 missing_docs = "warn"

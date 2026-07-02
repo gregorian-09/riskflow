@@ -5,6 +5,9 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 readme.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Shared fixed-point risk types, instruments, positions, and market snapshots."
 
 [dependencies]

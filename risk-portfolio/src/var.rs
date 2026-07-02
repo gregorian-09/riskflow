@@ -2,6 +2,19 @@
 
 use crate::performance::{mean_return, sample_std_dev};
 
+const CONFIDENCE_90: f64 = 0.90;
+const CONFIDENCE_95: f64 = 0.95;
+const CONFIDENCE_97_5: f64 = 0.975;
+const CONFIDENCE_99: f64 = 0.99;
+const Z_90: f64 = 1.281_551_565_544_600_4;
+const Z_95: f64 = 1.644_853_626_951_472_2;
+const Z_97_5: f64 = 1.959_963_984_540_054;
+const Z_99: f64 = 2.326_347_874_040_840_8;
+const CONFIDENCE_EPSILON: f64 = 1e-12;
+const LCG_MULTIPLIER: u64 = 6_364_136_223_846_793_005;
+const LCG_INCREMENT: u64 = 1;
+const UPPER_32_SHIFT: u32 = 32;
+
 /// Seed value used by deterministic simulation-based analytics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SimulationSeed(pub u64);
@@ -73,14 +86,14 @@ pub fn monte_carlo_var(
 }
 
 fn z_score(confidence: f64) -> Option<f64> {
-    let z = if (confidence - 0.90).abs() < 1e-12 {
-        1.281_551_565_544_600_4
-    } else if (confidence - 0.95).abs() < 1e-12 {
-        1.644_853_626_951_472_2
-    } else if (confidence - 0.975).abs() < 1e-12 {
-        1.959_963_984_540_054
-    } else if (confidence - 0.99).abs() < 1e-12 {
-        2.326_347_874_040_840_8
+    let z = if (confidence - CONFIDENCE_90).abs() < CONFIDENCE_EPSILON {
+        Z_90
+    } else if (confidence - CONFIDENCE_95).abs() < CONFIDENCE_EPSILON {
+        Z_95
+    } else if (confidence - CONFIDENCE_97_5).abs() < CONFIDENCE_EPSILON {
+        Z_97_5
+    } else if (confidence - CONFIDENCE_99).abs() < CONFIDENCE_EPSILON {
+        Z_99
     } else {
         return None;
     };
@@ -100,13 +113,13 @@ impl DeterministicRng {
     fn next_u64(&mut self) -> u64 {
         self.state = self
             .state
-            .wrapping_mul(6_364_136_223_846_793_005)
-            .wrapping_add(1);
+            .wrapping_mul(LCG_MULTIPLIER)
+            .wrapping_add(LCG_INCREMENT);
         self.state
     }
 
     fn next_unit(&mut self) -> f64 {
-        let value = u32::try_from(self.next_u64() >> 32).unwrap_or(0);
+        let value = u32::try_from(self.next_u64() >> UPPER_32_SHIFT).unwrap_or(0);
         f64::from(value) * (1.0 / (f64::from(u32::MAX) + 1.0))
     }
 
