@@ -17,6 +17,8 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+pub mod covariance;
+pub mod greeks;
 pub mod netting;
 pub mod performance;
 pub mod var;

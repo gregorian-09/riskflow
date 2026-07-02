@@ -109,6 +109,22 @@ pub enum Instrument {
     Option(OptionSpec),
 }
 
+/// Common exposure interface consumed across risk crates.
+///
+/// This trait is the stable boundary a future options implementation can
+/// satisfy without making `risk-pretrade` or `risk-portfolio` depend on an
+/// options crate directly.
+pub trait RiskExposure {
+    /// Computes the risk weight for the supplied quantity and market snapshot.
+    fn risk_weight(&self, qty: Qty, market: &MarketSnapshot, now: Timestamp) -> RiskWeight;
+
+    /// Returns currencies touched by the exposure.
+    fn currencies(&self) -> CurrencySet;
+
+    /// Returns the settlement currency for the exposure.
+    fn settlement_currency(&self) -> CurrencyId;
+}
+
 /// Startup-loaded instrument reference data.
 #[derive(Debug, Clone, Default)]
 pub struct InstrumentCatalog {
@@ -242,6 +258,20 @@ impl Instrument {
     }
 }
 
+impl RiskExposure for Instrument {
+    fn risk_weight(&self, qty: Qty, market: &MarketSnapshot, now: Timestamp) -> RiskWeight {
+        (*self).risk_weight(qty, market, now)
+    }
+
+    fn currencies(&self) -> CurrencySet {
+        (*self).currencies()
+    }
+
+    fn settlement_currency(&self) -> CurrencyId {
+        (*self).settlement_currency()
+    }
+}
+
 fn linear_weight(
     instrument_id: InstrumentId,
     qty: Qty,
@@ -315,6 +345,7 @@ mod tests {
         CurrencyId,
         instrument::{
             EquitySpec, Instrument, InstrumentCatalog, InstrumentCatalogError, OptionSpec,
+            RiskExposure,
         },
         market::{MarketPrice, MarketSnapshot},
         types::{InstrumentId, Price, Qty, Timestamp},
@@ -353,6 +384,25 @@ mod tests {
             equity.risk_weight(Qty::new(2), &market, Timestamp(10)),
             RiskWeight::Linear(crate::Notional::new(100))
         );
+    }
+
+    #[test]
+    fn risk_exposure_trait_delegates_to_instrument() {
+        let equity = Instrument::Equity(EquitySpec {
+            instrument_id: InstrumentId(1),
+            settlement_currency: CurrencyId(840),
+        });
+        let mut market = MarketSnapshot::new(10, 10, 10);
+        market.insert_price(
+            InstrumentId(1),
+            MarketPrice::clean(Price::new(50), Timestamp(5)),
+        );
+
+        assert_eq!(
+            RiskExposure::risk_weight(&equity, Qty::new(2), &market, Timestamp(10)),
+            RiskWeight::Linear(crate::Notional::new(100))
+        );
+        assert_eq!(RiskExposure::settlement_currency(&equity), CurrencyId(840));
     }
 
     #[test]

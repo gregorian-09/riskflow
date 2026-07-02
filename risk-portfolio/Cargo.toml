@@ -8,6 +8,7 @@ readme.workspace = true
 description = "Offline portfolio risk analytics built on risk-core types."
 
 [dependencies]
+nalgebra = "0.33.3"
 risk-core = { path = "../risk-core" }
 
 [lints]
