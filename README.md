@@ -38,6 +38,7 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace --all-features
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 cargo bench -p risk-bench --bench evaluate -- --test
+cargo run -p risk-bench --release -- --iterations 50000
 ```
 
 The CI workflow also checks that `risk-pretrade` and `risk-portfolio` do not
