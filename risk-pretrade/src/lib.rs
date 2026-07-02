@@ -8,4 +8,7 @@ pub mod gate;
 pub mod limit_source;
 
 pub use gate::{EvaluateRequest, LimitTable, PretradeGate};
-pub use limit_source::{LimitSource, StaticLimitSource};
+pub use limit_source::{
+    FileLimitSource, LimitSource, ParseLimitTableError, ParseLimitTableErrorKind,
+    StaticLimitSource, parse_limit_table,
+};
