@@ -70,4 +70,6 @@ pub enum IndeterminateReason {
     UnknownSymbol,
     /// Limit data is missing or stale.
     MissingLimit,
+    /// Aggregate exposure snapshot is unavailable.
+    MissingAggregateSnapshot,
 }

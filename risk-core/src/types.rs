@@ -83,6 +83,12 @@ impl Notional {
         self.0
     }
 
+    /// Adds two notionals with overflow checking.
+    #[must_use]
+    pub fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
+
     /// Computes `abs(price * qty * multiplier)` with overflow checking.
     #[must_use]
     pub fn checked_linear(price: Price, qty: Qty, multiplier: i64) -> Option<Self> {

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::{
     currency::CurrencyPair,
-    types::{InstrumentId, Price, Timestamp},
+    types::{InstrumentId, Notional, Price, Timestamp},
     verdict::IndeterminateReason,
 };
 
@@ -101,6 +101,8 @@ pub struct MarketSnapshot {
     fx_rates: HashMap<CurrencyPair, MarketPrice>,
     max_price_age_nanos: u64,
     max_fx_age_nanos: u64,
+    aggregate_notional: Option<Notional>,
+    aggregate_quality: DataQuality,
     aggregate_observed_at: Option<Timestamp>,
     max_aggregate_age_nanos: u64,
 }
@@ -118,6 +120,8 @@ impl MarketSnapshot {
             fx_rates: HashMap::new(),
             max_price_age_nanos,
             max_fx_age_nanos,
+            aggregate_notional: None,
+            aggregate_quality: DataQuality::clean(),
             aggregate_observed_at: None,
             max_aggregate_age_nanos,
         }
@@ -133,8 +137,15 @@ impl MarketSnapshot {
         self.fx_rates.insert(pair, price);
     }
 
-    /// Marks the aggregate exposure snapshot observation time.
-    pub const fn set_aggregate_observed_at(&mut self, observed_at: Timestamp) {
+    /// Sets the aggregate base-currency notional snapshot.
+    pub const fn set_aggregate_notional(
+        &mut self,
+        notional: Notional,
+        observed_at: Timestamp,
+        quality: DataQuality,
+    ) {
+        self.aggregate_notional = Some(notional);
+        self.aggregate_quality = quality;
         self.aggregate_observed_at = Some(observed_at);
     }
 
@@ -181,6 +192,26 @@ impl MarketSnapshot {
     pub fn aggregate_is_fresh(&self, now: Timestamp) -> bool {
         self.aggregate_observed_at
             .is_some_and(|observed_at| observed_at.age_at(now) <= self.max_aggregate_age_nanos)
+    }
+
+    /// Returns a trusted aggregate base-currency notional snapshot.
+    pub fn trusted_aggregate_notional(
+        &self,
+        now: Timestamp,
+    ) -> Result<Notional, IndeterminateReason> {
+        let notional = self
+            .aggregate_notional
+            .ok_or(IndeterminateReason::MissingAggregateSnapshot)?;
+
+        if !self.aggregate_quality.is_clean() {
+            return Err(IndeterminateReason::BadDataQuality);
+        }
+
+        if !self.aggregate_is_fresh(now) {
+            return Err(IndeterminateReason::StaleAggregateSnapshot);
+        }
+
+        Ok(notional)
     }
 }
 

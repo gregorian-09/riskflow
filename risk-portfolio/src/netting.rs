@@ -13,3 +13,11 @@ pub fn aggregate_snapshot_ready(
         Err(IndeterminateReason::StaleAggregateSnapshot)
     }
 }
+
+/// Returns the trusted aggregate notional snapshot for reporting.
+pub fn aggregate_notional_snapshot(
+    market: &MarketSnapshot,
+    now: Timestamp,
+) -> Result<risk_core::Notional, IndeterminateReason> {
+    market.trusted_aggregate_notional(now)
+}
