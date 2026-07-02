@@ -60,6 +60,8 @@ pub enum IndeterminateReason {
     MissingFxRate,
     /// A required FX rate is stale.
     StaleFxRate,
+    /// Multiple market data sources disagree outside the configured tolerance.
+    SourceDisagreement,
     /// The aggregate exposure snapshot is stale.
     StaleAggregateSnapshot,
     /// Fixed-point arithmetic overflowed.

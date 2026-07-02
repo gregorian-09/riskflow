@@ -200,6 +200,42 @@ impl MarketSnapshot {
         )
     }
 
+    /// Converts notional through a trusted FX rate.
+    ///
+    /// The raw fixed-point scale is intentionally owned by the caller's
+    /// instrument and currency configuration. This method validates freshness,
+    /// data quality, and overflow before returning the raw product.
+    pub fn convert_notional(
+        &self,
+        notional: Notional,
+        pair: CurrencyPair,
+        now: Timestamp,
+    ) -> Result<Notional, IndeterminateReason> {
+        let fx_rate = self.trusted_fx_rate(pair, now)?;
+
+        notional
+            .checked_mul_price(fx_rate)
+            .ok_or(IndeterminateReason::ArithmeticOverflow)
+    }
+
+    /// Verifies that two instrument price sources agree within a BPS tolerance.
+    ///
+    /// Both prices must first pass the snapshot's normal price trust checks.
+    /// Tolerance is measured against the larger absolute source price so the
+    /// check is symmetric.
+    pub fn validate_source_agreement(
+        &self,
+        primary: InstrumentId,
+        secondary: InstrumentId,
+        max_deviation_bps: u32,
+        now: Timestamp,
+    ) -> Result<(), IndeterminateReason> {
+        let primary = self.trusted_price(primary, now)?;
+        let secondary = self.trusted_price(secondary, now)?;
+
+        prices_agree(primary, secondary, max_deviation_bps)
+    }
+
     /// Returns whether the aggregate exposure snapshot is fresh enough.
     #[must_use]
     pub fn aggregate_is_fresh(&self, now: Timestamp) -> bool {
@@ -245,13 +281,40 @@ fn trusted_market_price(
     Ok(price.price)
 }
 
+fn prices_agree(
+    primary: Price,
+    secondary: Price,
+    max_deviation_bps: u32,
+) -> Result<(), IndeterminateReason> {
+    let primary = i128::from(primary.raw());
+    let secondary = i128::from(secondary.raw());
+    let denominator = primary.abs().max(secondary.abs());
+
+    if denominator == 0 {
+        return Ok(());
+    }
+
+    let deviation = (primary - secondary).abs();
+    let deviation_bps = deviation
+        .checked_mul(10_000)
+        .ok_or(IndeterminateReason::ArithmeticOverflow)?
+        / denominator;
+
+    if deviation_bps <= i128::from(max_deviation_bps) {
+        Ok(())
+    } else {
+        Err(IndeterminateReason::SourceDisagreement)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use of_core::DataQualityFlags;
 
     use crate::{
+        currency::{CurrencyId, CurrencyPair},
         market::{DataQuality, MarketPrice, MarketSnapshot},
-        types::{InstrumentId, Price, Timestamp},
+        types::{InstrumentId, Notional, Price, Timestamp},
         verdict::IndeterminateReason,
     };
 
@@ -270,6 +333,78 @@ mod tests {
         assert_eq!(
             market.trusted_price(InstrumentId(1), Timestamp(10)),
             Err(IndeterminateReason::BadDataQuality)
+        );
+    }
+
+    #[test]
+    fn convert_notional_uses_trusted_fx_rate() {
+        let mut market = MarketSnapshot::new(10, 10, 10);
+        market.insert_fx_rate(
+            CurrencyPair::new(CurrencyId(1), CurrencyId(2)),
+            MarketPrice::clean(Price::new(2), Timestamp(5)),
+        );
+
+        assert_eq!(
+            market.convert_notional(
+                Notional::new(100),
+                CurrencyPair::new(CurrencyId(1), CurrencyId(2)),
+                Timestamp(10)
+            ),
+            Ok(Notional::new(200))
+        );
+    }
+
+    #[test]
+    fn convert_notional_fails_closed_for_stale_fx() {
+        let mut market = MarketSnapshot::new(10, 2, 10);
+        market.insert_fx_rate(
+            CurrencyPair::new(CurrencyId(1), CurrencyId(2)),
+            MarketPrice::clean(Price::new(2), Timestamp(5)),
+        );
+
+        assert_eq!(
+            market.convert_notional(
+                Notional::new(100),
+                CurrencyPair::new(CurrencyId(1), CurrencyId(2)),
+                Timestamp(10)
+            ),
+            Err(IndeterminateReason::StaleFxRate)
+        );
+    }
+
+    #[test]
+    fn source_agreement_accepts_prices_inside_tolerance() {
+        let mut market = MarketSnapshot::new(10, 10, 10);
+        market.insert_price(
+            InstrumentId(1),
+            MarketPrice::clean(Price::new(10_000), Timestamp(5)),
+        );
+        market.insert_price(
+            InstrumentId(2),
+            MarketPrice::clean(Price::new(10_020), Timestamp(5)),
+        );
+
+        assert_eq!(
+            market.validate_source_agreement(InstrumentId(1), InstrumentId(2), 25, Timestamp(10)),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn source_agreement_fails_closed_outside_tolerance() {
+        let mut market = MarketSnapshot::new(10, 10, 10);
+        market.insert_price(
+            InstrumentId(1),
+            MarketPrice::clean(Price::new(10_000), Timestamp(5)),
+        );
+        market.insert_price(
+            InstrumentId(2),
+            MarketPrice::clean(Price::new(10_500), Timestamp(5)),
+        );
+
+        assert_eq!(
+            market.validate_source_agreement(InstrumentId(1), InstrumentId(2), 25, Timestamp(10)),
+            Err(IndeterminateReason::SourceDisagreement)
         );
     }
 }

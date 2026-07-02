@@ -89,6 +89,17 @@ impl Notional {
         self.0.checked_add(rhs.0).map(Self)
     }
 
+    /// Multiplies this notional by a fixed-point price or rate.
+    ///
+    /// The caller owns the scaling convention. This method only guarantees
+    /// checked arithmetic and preserves the raw fixed-point product.
+    #[must_use]
+    pub fn checked_mul_price(self, price: Price) -> Option<Self> {
+        let raw = i128::from(self.0).checked_mul(i128::from(price.raw()))?;
+
+        i64::try_from(raw).ok().map(Self)
+    }
+
     /// Multiplies a fixed-point unit amount by an absolute quantity.
     #[must_use]
     pub fn checked_mul_abs_qty(self, qty: Qty) -> Option<Self> {
@@ -143,5 +154,14 @@ mod tests {
     fn checked_linear_returns_absolute_notional() {
         let notional = Notional::checked_linear(Price::new(10), Qty::new(-3), 2).unwrap();
         assert_eq!(notional.raw(), 60);
+    }
+
+    #[test]
+    fn checked_mul_price_rejects_overflow() {
+        assert!(
+            Notional::new(i64::MAX)
+                .checked_mul_price(Price::new(2))
+                .is_none()
+        );
     }
 }
