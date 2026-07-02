@@ -1,13 +1,20 @@
 //! Pretrade gate and limit table.
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+};
 
 use arc_swap::ArcSwap;
 use risk_core::{
-    Instrument, InstrumentId, MarketSnapshot, Notional, Price, Qty, RiskVerdict, RiskWeight,
-    Timestamp,
+    Instrument, InstrumentId, MarketSnapshot, Notional, Price, Qty, RejectReason, RiskVerdict,
+    RiskWeight, Timestamp,
 };
 
+use crate::audit::{LimitChangeAuditRecord, OrderAuditRecord, TradingStateAuditRecord};
 use crate::checks::{aggregate_notional, fat_finger, margin, notional, position_limit};
 
 /// Immutable pretrade limit table.
@@ -81,6 +88,33 @@ impl LimitTable {
     pub fn initial_margin_per_unit(&self, instrument_id: InstrumentId) -> Option<Notional> {
         self.initial_margin_per_unit.get(&instrument_id).copied()
     }
+
+    /// Returns a shape summary suitable for operational audit logs.
+    #[must_use]
+    pub fn summary(&self) -> LimitTableSummary {
+        LimitTableSummary {
+            per_order_notional_count: self.per_order_notional.len(),
+            aggregate_notional_configured: self.aggregate_notional.is_some(),
+            max_abs_position_count: self.max_abs_position.len(),
+            fat_finger_band_count: self.fat_finger_band_bps.len(),
+            initial_margin_count: self.initial_margin_per_unit.len(),
+        }
+    }
+}
+
+/// Audit-safe shape summary of a limit table.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LimitTableSummary {
+    /// Number of per-order notional limits.
+    pub per_order_notional_count: usize,
+    /// Whether an aggregate notional limit is configured.
+    pub aggregate_notional_configured: bool,
+    /// Number of maximum-position limits.
+    pub max_abs_position_count: usize,
+    /// Number of fat-finger bands.
+    pub fat_finger_band_count: usize,
+    /// Number of initial-margin entries.
+    pub initial_margin_count: usize,
 }
 
 /// Request evaluated by the pretrade gate.
@@ -106,6 +140,7 @@ pub struct EvaluateRequest<'a> {
 #[derive(Debug)]
 pub struct PretradeGate {
     limits: ArcSwap<LimitTable>,
+    trading_enabled: AtomicBool,
 }
 
 impl PretradeGate {
@@ -114,6 +149,7 @@ impl PretradeGate {
     pub fn new(limits: LimitTable) -> Self {
         Self {
             limits: ArcSwap::from_pointee(limits),
+            trading_enabled: AtomicBool::new(true),
         }
     }
 
@@ -122,9 +158,85 @@ impl PretradeGate {
         self.limits.store(Arc::new(limits));
     }
 
+    /// Replaces the active limit table snapshot and returns an audit record.
+    pub fn update_limits_with_audit(
+        &self,
+        limits: LimitTable,
+        actor: impl Into<String>,
+        changed_at: Timestamp,
+    ) -> LimitChangeAuditRecord {
+        let previous = self.limits.load().summary();
+        self.update_limits(limits);
+        let current = self.limits.load().summary();
+
+        LimitChangeAuditRecord {
+            actor: actor.into(),
+            changed_at,
+            previous,
+            current,
+        }
+    }
+
+    /// Returns whether order evaluation is currently enabled.
+    #[must_use]
+    pub fn trading_enabled(&self) -> bool {
+        self.trading_enabled.load(Ordering::Acquire)
+    }
+
+    /// Sets the trading-enabled state and returns an audit record.
+    pub fn set_trading_enabled_with_audit(
+        &self,
+        enabled: bool,
+        actor: impl Into<String>,
+        changed_at: Timestamp,
+    ) -> TradingStateAuditRecord {
+        let previous_enabled = self.trading_enabled.swap(enabled, Ordering::AcqRel);
+
+        TradingStateAuditRecord {
+            actor: actor.into(),
+            changed_at,
+            previous_enabled,
+            current_enabled: enabled,
+        }
+    }
+
+    /// Disables order evaluation and returns an audit record.
+    pub fn disable_trading_with_audit(
+        &self,
+        actor: impl Into<String>,
+        changed_at: Timestamp,
+    ) -> TradingStateAuditRecord {
+        self.set_trading_enabled_with_audit(false, actor, changed_at)
+    }
+
+    /// Enables order evaluation and returns an audit record.
+    pub fn enable_trading_with_audit(
+        &self,
+        actor: impl Into<String>,
+        changed_at: Timestamp,
+    ) -> TradingStateAuditRecord {
+        self.set_trading_enabled_with_audit(true, actor, changed_at)
+    }
+
+    /// Evaluates an order request and returns an audit record with the verdict.
+    #[must_use]
+    pub fn evaluate_with_audit(
+        &self,
+        request: EvaluateRequest<'_>,
+    ) -> (RiskVerdict, OrderAuditRecord) {
+        let verdict = self.evaluate(request);
+        let audit = OrderAuditRecord::from_evaluation(request, verdict);
+
+        (verdict, audit)
+    }
+
     /// Evaluates an order request.
     #[must_use]
     pub fn evaluate(&self, request: EvaluateRequest<'_>) -> RiskVerdict {
+        if !self.trading_enabled() {
+            return RiskVerdict::Reject(RejectReason::TradingDisabled);
+        }
+
         let limits = self.limits.load();
         let limits = &**limits;
 
@@ -188,6 +300,7 @@ mod tests {
     };
 
     use super::{EvaluateRequest, LimitTable, PretradeGate};
+    use crate::audit::OrderAuditRecord;
 
     fn limits(per_order: i64) -> LimitTable {
         let mut limits = LimitTable::new();
@@ -261,6 +374,59 @@ mod tests {
         });
 
         assert_eq!(verdict, RiskVerdict::Pass);
+    }
+
+    #[test]
+    fn disabled_gate_rejects_with_audit_record() {
+        let equity = Instrument::Equity(EquitySpec {
+            instrument_id: InstrumentId(1),
+            settlement_currency: CurrencyId(840),
+        });
+        let gate = PretradeGate::new(limits(1_000));
+        let state_record = gate.disable_trading_with_audit("risk-manager", Timestamp(9));
+        let market = market(100, 0, Timestamp(5));
+
+        let (verdict, audit) = gate.evaluate_with_audit(EvaluateRequest {
+            instrument: equity,
+            qty: Qty::new(5),
+            current_position: Qty::new(0),
+            available_margin: Notional::new(1_000),
+            order_price: Price::new(100),
+            market: &market,
+            now: Timestamp(10),
+        });
+
+        assert!(state_record.previous_enabled);
+        assert!(!state_record.current_enabled);
+        assert_eq!(
+            verdict,
+            RiskVerdict::Reject(risk_core::RejectReason::TradingDisabled)
+        );
+        assert_eq!(
+            audit,
+            OrderAuditRecord {
+                instrument_id: InstrumentId(1),
+                asset_class: risk_core::AssetClass::Equity,
+                qty: Qty::new(5),
+                current_position: Qty::new(0),
+                available_margin: Notional::new(1_000),
+                order_price: Price::new(100),
+                evaluated_at: Timestamp(10),
+                verdict,
+            }
+        );
+    }
+
+    #[test]
+    fn limit_update_returns_audit_summary() {
+        let gate = PretradeGate::new(LimitTable::new());
+        let record = gate.update_limits_with_audit(limits(1_000), "file-source", Timestamp(12));
+
+        assert_eq!(record.actor, "file-source");
+        assert_eq!(record.changed_at, Timestamp(12));
+        assert_eq!(record.previous.per_order_notional_count, 0);
+        assert_eq!(record.current.per_order_notional_count, 1);
+        assert!(record.current.aggregate_notional_configured);
     }
 
     #[test]

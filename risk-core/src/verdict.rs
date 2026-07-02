@@ -45,6 +45,8 @@ pub enum RejectReason {
     Margin,
     /// Instrument is unknown to the gate.
     UnknownInstrument,
+    /// Trading has been disabled by an operational control.
+    TradingDisabled,
 }
 
 /// Reasons a check could not produce a trustworthy decision.

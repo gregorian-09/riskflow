@@ -1,0 +1,6 @@
+scenario,venue,symbol,qty,current_position,available_margin,order_price,expected
+pass_equity,XNYS,IBM,5,0,1000,100,Pass
+reject_notional,XNYS,IBM,20,0,1000,100,Reject(OrderNotionalLimit)
+reject_position,XNYS,IBM,5,98,1000,100,Reject(PositionLimit)
+reject_fat_finger,XNYS,IBM,5,0,1000,120,Reject(FatFinger)
+indeterminate_option,OPRA,IBM240119C00100000,1,0,1000,100,Indeterminate(UnsupportedOption)

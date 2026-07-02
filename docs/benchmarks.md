@@ -19,15 +19,20 @@ cargo run -p risk-bench --release -- --iterations 50000
 - Results: record median and p99.9 latency for steady reads and contended
   limit updates.
 
-## Local Smoke Result
+## Local Report
 
-This short run verifies the report path and output shape; it is not a published
-hardware claim.
+This local run verifies the report path and gives a baseline for development
+machines. Treat it as environment-specific, not as a universal latency claim.
+
+- Hardware: Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, 4 cores / 8 threads.
+- Operating system: Linux 6.6.87.2-microsoft-standard-WSL2 x86_64.
+- Rust toolchain: `rustc 1.95.0 (59807616e 2026-04-14)`.
+- Build profile: `--release`.
 
 ```text
-iterations: 5000
-steady_read.median_ns: 100
-steady_read.p99_9_ns: 200
-contended_updates.median_ns: 200
-contended_updates.p99_9_ns: 600
+iterations: 50000
+steady_read.median_ns: 200
+steady_read.p99_9_ns: 1800
+contended_updates.median_ns: 300
+contended_updates.p99_9_ns: 16300
 ```

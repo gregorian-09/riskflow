@@ -13,10 +13,15 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+pub mod audit;
 pub mod checks;
 pub mod gate;
 pub mod limit_source;
 
+pub use audit::{
+    GateAuditRecord, InMemoryAuditLog, LimitChangeAuditRecord, OrderAuditRecord,
+    TradingStateAuditRecord,
+};
 pub use gate::{EvaluateRequest, LimitTable, PretradeGate};
 pub use limit_source::{
     FileLimitSource, LimitSource, ParseLimitTableError, ParseLimitTableErrorKind,

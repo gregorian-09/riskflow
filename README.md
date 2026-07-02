@@ -36,14 +36,16 @@ The expected local verification set is:
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace --all-features
+cargo test --workspace --examples --all-features
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 cargo bench -p risk-bench --bench evaluate -- --test
 cargo run -p risk-bench --release -- --iterations 50000
 ```
 
-Benchmark reporting methodology lives in `docs/benchmarks.md`; hardening checks
-live in `docs/hardening.md`; named constants and test fixture values are
-documented in `docs/constants.md`.
+Benchmark reporting methodology lives in `docs/benchmarks.md`; validation
+fixtures live in `docs/validation.md`; hardening checks live in
+`docs/hardening.md`; named constants and test fixture values are documented in
+`docs/constants.md`.
 
 The CI workflow also checks that `risk-pretrade` and `risk-portfolio` do not
 depend on `risk-options`.
