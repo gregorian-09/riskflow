@@ -52,6 +52,12 @@ impl Qty {
     pub fn checked_abs(self) -> Option<Self> {
         self.0.checked_abs().map(Self)
     }
+
+    /// Adds two quantities with overflow checking.
+    #[must_use]
+    pub fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.0.checked_add(rhs.0).map(Self)
+    }
 }
 
 /// Fixed-point notional value used for limit comparisons.
