@@ -8,7 +8,7 @@ use risk_core::{
     Timestamp,
 };
 
-use crate::checks::{aggregate_notional, fat_finger, notional, position_limit};
+use crate::checks::{aggregate_notional, fat_finger, margin, notional, position_limit};
 
 /// Immutable pretrade limit table.
 #[derive(Debug, Clone, Default)]
@@ -17,6 +17,7 @@ pub struct LimitTable {
     aggregate_notional: Option<Notional>,
     max_abs_position: HashMap<InstrumentId, Qty>,
     fat_finger_band_bps: HashMap<InstrumentId, u32>,
+    initial_margin_per_unit: HashMap<InstrumentId, Notional>,
 }
 
 impl LimitTable {
@@ -46,6 +47,11 @@ impl LimitTable {
         self.fat_finger_band_bps.insert(instrument_id, band_bps);
     }
 
+    /// Sets initial margin requirement per absolute quantity unit.
+    pub fn set_initial_margin_per_unit(&mut self, instrument_id: InstrumentId, margin: Notional) {
+        self.initial_margin_per_unit.insert(instrument_id, margin);
+    }
+
     /// Returns the per-order notional limit for an instrument.
     #[must_use]
     pub fn per_order_notional(&self, instrument_id: InstrumentId) -> Option<Notional> {
@@ -69,6 +75,12 @@ impl LimitTable {
     pub fn fat_finger_band_bps(&self, instrument_id: InstrumentId) -> Option<u32> {
         self.fat_finger_band_bps.get(&instrument_id).copied()
     }
+
+    /// Returns initial margin requirement per absolute quantity unit.
+    #[must_use]
+    pub fn initial_margin_per_unit(&self, instrument_id: InstrumentId) -> Option<Notional> {
+        self.initial_margin_per_unit.get(&instrument_id).copied()
+    }
 }
 
 /// Request evaluated by the pretrade gate.
@@ -80,6 +92,8 @@ pub struct EvaluateRequest<'a> {
     pub qty: Qty,
     /// Current signed position before the order.
     pub current_position: Qty,
+    /// Available margin for this account/book.
+    pub available_margin: Notional,
     /// Submitted order price.
     pub order_price: Price,
     /// Market snapshot.
@@ -142,6 +156,17 @@ impl PretradeGate {
                     return verdict;
                 }
 
+                let verdict = margin::check(
+                    limits,
+                    request.instrument,
+                    request.current_position,
+                    request.qty,
+                    request.available_margin,
+                );
+                if !verdict.is_pass() {
+                    return verdict;
+                }
+
                 fat_finger::check(
                     limits,
                     instrument_id,
@@ -170,6 +195,7 @@ mod tests {
         limits.set_aggregate_notional(Notional::new(10_000));
         limits.set_max_abs_position(InstrumentId(1), Qty::new(100));
         limits.set_fat_finger_band_bps(InstrumentId(1), 500);
+        limits.set_initial_margin_per_unit(InstrumentId(1), Notional::new(10));
         limits
     }
 
@@ -206,6 +232,7 @@ mod tests {
             instrument: option,
             qty: Qty::new(1),
             current_position: Qty::new(0),
+            available_margin: Notional::new(1_000),
             order_price: Price::new(100),
             market: &market,
             now: Timestamp(1),
@@ -227,6 +254,7 @@ mod tests {
             instrument: equity,
             qty: Qty::new(5),
             current_position: Qty::new(0),
+            available_margin: Notional::new(1_000),
             order_price: Price::new(100),
             market: &market,
             now: Timestamp(10),
@@ -248,6 +276,7 @@ mod tests {
             instrument: equity,
             qty: Qty::new(5),
             current_position: Qty::new(0),
+            available_margin: Notional::new(1_000),
             order_price: Price::new(100),
             market: &market,
             now: Timestamp(10),
@@ -272,6 +301,7 @@ mod tests {
             instrument: equity,
             qty: Qty::new(5),
             current_position: Qty::new(7),
+            available_margin: Notional::new(1_000),
             order_price: Price::new(100),
             market: &market,
             now: Timestamp(10),
@@ -293,6 +323,7 @@ mod tests {
             instrument: equity,
             qty: Qty::new(5),
             current_position: Qty::new(0),
+            available_margin: Notional::new(1_000),
             order_price: Price::new(120),
             market: &market,
             now: Timestamp(10),
@@ -316,6 +347,7 @@ mod tests {
             instrument: equity,
             qty: Qty::new(5),
             current_position: Qty::new(0),
+            available_margin: Notional::new(1_000),
             order_price: Price::new(100),
             market: &market,
             now: Timestamp(10),
@@ -342,6 +374,7 @@ mod tests {
             instrument: equity,
             qty: Qty::new(5),
             current_position: Qty::new(0),
+            available_margin: Notional::new(1_000),
             order_price: Price::new(100),
             market: &market,
             now: Timestamp(20),
@@ -350,6 +383,32 @@ mod tests {
         assert_eq!(
             verdict,
             RiskVerdict::Indeterminate(IndeterminateReason::StaleAggregateSnapshot)
+        );
+    }
+
+    #[test]
+    fn future_order_rejects_when_initial_margin_exceeds_available_margin() {
+        let future = Instrument::Future(risk_core::FutureSpec {
+            instrument_id: InstrumentId(1),
+            settlement_currency: CurrencyId(840),
+            multiplier: 1,
+        });
+        let gate = PretradeGate::new(limits(1_000));
+        let market = market(100, 0, Timestamp(5));
+
+        let verdict = gate.evaluate(EvaluateRequest {
+            instrument: future,
+            qty: Qty::new(5),
+            current_position: Qty::new(0),
+            available_margin: Notional::new(40),
+            order_price: Price::new(100),
+            market: &market,
+            now: Timestamp(10),
+        });
+
+        assert_eq!(
+            verdict,
+            RiskVerdict::Reject(risk_core::RejectReason::Margin)
         );
     }
 }

@@ -16,7 +16,7 @@ pub struct MarginState {
 }
 
 /// Dynamic position state, separate from static instrument reference data.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Position {
     /// Cash equity position.
     Equity {
@@ -68,7 +68,7 @@ pub enum Position {
         /// Signed position quantity.
         qty: Qty,
         /// Optional externally supplied delta, unused by v1 pretrade.
-        delta: Option<i64>,
+        delta: Option<f64>,
         /// Contract expiry.
         expiry: Timestamp,
     },

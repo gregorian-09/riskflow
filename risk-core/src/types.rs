@@ -89,6 +89,17 @@ impl Notional {
         self.0.checked_add(rhs.0).map(Self)
     }
 
+    /// Multiplies a fixed-point unit amount by an absolute quantity.
+    #[must_use]
+    pub fn checked_mul_abs_qty(self, qty: Qty) -> Option<Self> {
+        let qty = qty.checked_abs()?;
+        let raw = i128::from(self.0)
+            .checked_mul(i128::from(qty.raw()))?
+            .checked_abs()?;
+
+        i64::try_from(raw).ok().map(Self)
+    }
+
     /// Computes `abs(price * qty * multiplier)` with overflow checking.
     #[must_use]
     pub fn checked_linear(price: Price, qty: Qty, multiplier: i64) -> Option<Self> {

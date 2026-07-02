@@ -72,6 +72,7 @@ impl LimitSource for FileLimitSource {
 /// per_order_notional,1,10000
 /// max_abs_position,1,500
 /// fat_finger_band_bps,1,250
+/// initial_margin_per_unit,1,5000
 /// ```
 ///
 /// Empty lines and `#` comments are ignored.
@@ -106,6 +107,12 @@ pub fn parse_limit_table(contents: &str) -> Result<LimitTable, ParseLimitTableEr
                 limits.set_fat_finger_band_bps(
                     InstrumentId(parse_u32(line_number, raw_instrument_id)?),
                     parse_u32(line_number, raw_band_bps)?,
+                );
+            }
+            ["initial_margin_per_unit", raw_instrument_id, raw_margin] => {
+                limits.set_initial_margin_per_unit(
+                    InstrumentId(parse_u32(line_number, raw_instrument_id)?),
+                    Notional::new(parse_i64(line_number, raw_margin)?),
                 );
             }
             [record, ..] => {
@@ -216,6 +223,7 @@ mod tests {
             per_order_notional,1,1000
             max_abs_position,1,50
             fat_finger_band_bps,1,250
+            initial_margin_per_unit,1,10
             ",
         )
         .unwrap();
@@ -230,6 +238,10 @@ mod tests {
         );
         assert_eq!(limits.max_abs_position(InstrumentId(1)), Some(Qty::new(50)));
         assert_eq!(limits.fat_finger_band_bps(InstrumentId(1)), Some(250));
+        assert_eq!(
+            limits.initial_margin_per_unit(InstrumentId(1)),
+            Some(Notional::new(10))
+        );
     }
 
     #[test]
@@ -248,7 +260,7 @@ mod tests {
         let path = temp_limit_path();
         fs::write(
             &path,
-            "aggregate_notional,10000\nper_order_notional,1,1000\nmax_abs_position,1,50\nfat_finger_band_bps,1,250\n",
+            "aggregate_notional,10000\nper_order_notional,1,1000\nmax_abs_position,1,50\nfat_finger_band_bps,1,250\ninitial_margin_per_unit,1,10\n",
         )
         .unwrap();
 
