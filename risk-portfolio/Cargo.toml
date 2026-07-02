@@ -4,6 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+readme.workspace = true
 description = "Offline portfolio risk analytics built on risk-core types."
 
 [dependencies]

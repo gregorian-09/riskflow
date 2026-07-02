@@ -3,6 +3,19 @@
 //! `risk-core` owns the fixed-point identifiers, instruments, positions,
 //! market snapshots, and verdict types consumed by latency-sensitive and
 //! offline risk crates.
+//!
+//! # Scope
+//!
+//! v1 covers equities, spot FX, spot crypto, futures, and perpetual swaps.
+//! Options are present as taxonomy placeholders but return
+//! [`RiskWeight::Indeterminate`] until an isolated options crate is available.
+//!
+//! # Failure Model
+//!
+//! Missing prices, stale snapshots, bad upstream data quality, arithmetic
+//! overflow, and unsupported instruments are represented explicitly with
+//! [`IndeterminateReason`]. Callers should treat indeterminate risk as
+//! fail-closed.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
