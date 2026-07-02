@@ -1,3 +1,5 @@
 RISK_SPEC.md
 RISK_SPEC.md:Zone.Identifier
 target/
+coverage/
+.idea/

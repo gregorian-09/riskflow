@@ -40,6 +40,17 @@ jobs:
       - name: Docs
         run: RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 
+      - name: Install Hardening Tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit,cargo-deny
+
+      - name: Audit
+        run: cargo audit --db target/advisory-db
+
+      - name: Dependency Policy
+        run: cargo deny check
+
       - name: Boundary
         run: |
           cargo tree -p risk-pretrade --prefix none > pretrade-tree.txt
