@@ -14,7 +14,7 @@ floating-point statistics.
 
 | Reader | Start Here | Then Read |
 |---|---|---|
-| New user | [Getting Started](docs/getting_started.md) | [Architecture](docs/architecture.md), crate READMEs |
+| New user | [Getting Started](docs/getting_started.md) | [End-To-End Code Flow](docs/end_to_end_code_flow.md), [Architecture](docs/architecture.md) |
 | Integrating order entry | [risk-pretrade guide](docs/crates/risk-pretrade.md) | [Validation](docs/validation.md), [Observability](docs/observability.md) |
 | Building analytics | [risk-portfolio guide](docs/crates/risk-portfolio.md) | [Model Validation](docs/model_validation.md), [Constants](docs/constants.md) |
 | Reviewing safety | [Architecture](docs/architecture.md) | [Hardening](docs/hardening.md), [Security Review](docs/security_review.md) |
@@ -244,6 +244,7 @@ indeterminate risk until a separate options crate is designed.
 Project fundamentals:
 
 - [Getting Started](docs/getting_started.md)
+- [End-To-End Code Flow](docs/end_to_end_code_flow.md)
 - [Architecture](docs/architecture.md)
 - [Contributing](CONTRIBUTING.md)
 - [Changelog](CHANGELOG.md)
