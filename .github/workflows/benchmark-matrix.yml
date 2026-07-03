@@ -1,0 +1,34 @@
+name: benchmark matrix
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  benchmark:
+    name: benchmark target hardware
+    runs-on:
+      - self-hosted
+      - risk-prod-bench
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Record Hardware
+        run: |
+          rustc --version > benchmark-environment.txt
+          uname -srvmo >> benchmark-environment.txt
+          lscpu >> benchmark-environment.txt
+
+      - name: Run Benchmark
+        run: cargo run -p risk-bench --release -- --iterations 50000 | tee benchmark-results.txt
+
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-matrix-row
+          path: |
+            benchmark-environment.txt
+            benchmark-results.txt

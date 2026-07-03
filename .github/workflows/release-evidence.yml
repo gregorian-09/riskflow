@@ -1,0 +1,60 @@
+name: release evidence
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+
+jobs:
+  evidence:
+    name: release evidence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
+          components: rustfmt, clippy
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Hardening Tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit,cargo-deny
+
+      - name: Generate Evidence Bundle
+        run: scripts/release_evidence.sh target/release-evidence
+
+      - name: Upload Evidence Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence
+          path: target/release-evidence
+
+  model-validation-approval:
+    name: model validation approval
+    needs: evidence
+    runs-on: ubuntu-latest
+    environment: model-validation
+    steps:
+      - name: Approval Recorded
+        run: echo "model-validation environment approval recorded"
+
+  security-review-approval:
+    name: security review approval
+    needs: evidence
+    runs-on: ubuntu-latest
+    environment: security-review
+    steps:
+      - name: Approval Recorded
+        run: echo "security-review environment approval recorded"

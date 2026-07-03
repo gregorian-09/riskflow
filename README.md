@@ -50,7 +50,8 @@ observability guidance lives in `docs/observability.md`; schema migration
 policy lives in `docs/schemas.md`; benchmark matrix requirements live in
 `docs/benchmark_matrix.md`; model-validation methodology lives in
 `docs/model_validation.md`; security-review scope lives in
-`docs/security_review.md`; named constants and test fixture values are
+`docs/security_review.md`; release governance lives in
+`docs/release_governance.md`; named constants and test fixture values are
 documented in `docs/constants.md`.
 
 The CI workflow also checks that `risk-pretrade` and `risk-portfolio` do not

@@ -1,0 +1,13 @@
+# Require explicit review for institutional risk, governance, and release paths.
+* @gregorian-rayne
+
+/risk-core/ @gregorian-rayne
+/risk-pretrade/ @gregorian-rayne
+/risk-portfolio/ @gregorian-rayne
+/risk-bench/ @gregorian-rayne
+/.github/ @gregorian-rayne
+/docs/ @gregorian-rayne
+/scripts/ @gregorian-rayne
+/deny.toml @gregorian-rayne
+/Cargo.toml @gregorian-rayne
+/Cargo.lock @gregorian-rayne
