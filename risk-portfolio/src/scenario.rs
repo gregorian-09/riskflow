@@ -1,5 +1,7 @@
 //! Deterministic scenario and stress testing helpers.
 
+use std::{error::Error, fmt};
+
 /// Return shock applied to a single asset in an ordered asset universe.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ScenarioShock {
@@ -19,6 +21,43 @@ impl ScenarioShock {
         }
     }
 }
+
+/// Error returned by deterministic scenario analytics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScenarioError {
+    /// Base return or weight inputs are empty.
+    EmptyInput,
+    /// Base return and weight slices do not describe the same asset universe.
+    ShapeMismatch,
+    /// A base return, weight, or return shock is not finite.
+    NonFiniteInput,
+    /// A shock references an asset outside the base return slice.
+    InvalidShockIndex {
+        /// Invalid zero-based asset index.
+        asset_index: usize,
+        /// Number of assets in the base universe.
+        asset_count: usize,
+    },
+}
+
+impl fmt::Display for ScenarioError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EmptyInput => f.write_str("scenario input is empty"),
+            Self::ShapeMismatch => f.write_str("base returns and weights have different lengths"),
+            Self::NonFiniteInput => f.write_str("scenario input contains a non-finite value"),
+            Self::InvalidShockIndex {
+                asset_index,
+                asset_count,
+            } => write!(
+                f,
+                "shock asset index {asset_index} is outside asset count {asset_count}"
+            ),
+        }
+    }
+}
+
+impl Error for ScenarioError {}
 
 /// Result of applying a deterministic return scenario.
 #[derive(Debug, Clone, PartialEq)]
@@ -67,16 +106,18 @@ pub fn apply_return_shocks(
     weights: &[f64],
     shocks: &[ScenarioShock],
 ) -> Option<ScenarioResult> {
-    if base_returns.is_empty()
-        || base_returns.len() != weights.len()
-        || base_returns.iter().any(|value| !value.is_finite())
-        || weights.iter().any(|value| !value.is_finite())
-        || shocks
-            .iter()
-            .any(|shock| shock.asset_index >= base_returns.len() || !shock.return_shift.is_finite())
-    {
-        return None;
-    }
+    try_apply_return_shocks(base_returns, weights, shocks).ok()
+}
+
+/// Applies additive return shocks and computes weighted portfolio loss.
+///
+/// This typed variant reports why a scenario cannot be evaluated.
+pub fn try_apply_return_shocks(
+    base_returns: &[f64],
+    weights: &[f64],
+    shocks: &[ScenarioShock],
+) -> Result<ScenarioResult, ScenarioError> {
+    validate_scenario_inputs(base_returns, weights, shocks)?;
 
     let mut shocked_returns = base_returns.to_vec();
     for shock in shocks {
@@ -90,7 +131,7 @@ pub fn apply_return_shocks(
         .sum::<f64>();
     let portfolio_loss = (-portfolio_return).max(0.0);
 
-    Some(ScenarioResult {
+    Ok(ScenarioResult {
         shocked_returns,
         portfolio_return,
         portfolio_loss,
@@ -104,10 +145,21 @@ pub fn run_stress_scenarios(
     weights: &[f64],
     scenarios: &[StressScenario],
 ) -> Option<Vec<NamedScenarioResult>> {
+    try_run_stress_scenarios(base_returns, weights, scenarios).ok()
+}
+
+/// Applies a list of named stress scenarios.
+///
+/// This typed variant reports why any scenario cannot be evaluated.
+pub fn try_run_stress_scenarios(
+    base_returns: &[f64],
+    weights: &[f64],
+    scenarios: &[StressScenario],
+) -> Result<Vec<NamedScenarioResult>, ScenarioError> {
     scenarios
         .iter()
         .map(|scenario| {
-            apply_return_shocks(base_returns, weights, &scenario.shocks).map(|result| {
+            try_apply_return_shocks(base_returns, weights, &scenario.shocks).map(|result| {
                 NamedScenarioResult {
                     name: scenario.name.clone(),
                     result,
@@ -117,9 +169,42 @@ pub fn run_stress_scenarios(
         .collect()
 }
 
+fn validate_scenario_inputs(
+    base_returns: &[f64],
+    weights: &[f64],
+    shocks: &[ScenarioShock],
+) -> Result<(), ScenarioError> {
+    if base_returns.is_empty() {
+        return Err(ScenarioError::EmptyInput);
+    }
+    if base_returns.len() != weights.len() {
+        return Err(ScenarioError::ShapeMismatch);
+    }
+    if base_returns.iter().any(|value| !value.is_finite())
+        || weights.iter().any(|value| !value.is_finite())
+        || shocks.iter().any(|shock| !shock.return_shift.is_finite())
+    {
+        return Err(ScenarioError::NonFiniteInput);
+    }
+
+    for shock in shocks {
+        if shock.asset_index >= base_returns.len() {
+            return Err(ScenarioError::InvalidShockIndex {
+                asset_index: shock.asset_index,
+                asset_count: base_returns.len(),
+            });
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{ScenarioShock, StressScenario, apply_return_shocks, run_stress_scenarios};
+    use super::{
+        ScenarioError, ScenarioShock, StressScenario, apply_return_shocks, run_stress_scenarios,
+        try_apply_return_shocks,
+    };
 
     #[test]
     fn applies_return_shocks_and_computes_loss() {
@@ -138,6 +223,13 @@ mod tests {
         assert_eq!(
             apply_return_shocks(&[0.01], &[1.0], &[ScenarioShock::new(1, -0.10)]),
             None
+        );
+        assert_eq!(
+            try_apply_return_shocks(&[0.01], &[1.0], &[ScenarioShock::new(1, -0.10)]),
+            Err(ScenarioError::InvalidShockIndex {
+                asset_index: 1,
+                asset_count: 1
+            })
         );
     }
 

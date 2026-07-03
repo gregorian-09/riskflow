@@ -12,8 +12,9 @@ exposure a book carries.
 - `risk-pretrade`: synchronous pretrade gate with an `ArcSwap` limit table and
   fail-closed checks for notional, aggregate exposure, position, margin, and
   fat-finger limits.
-- `risk-portfolio`: batch analytics for performance, VaR, and cross-currency
-  netting helpers.
+- `risk-portfolio`: batch analytics for performance, historical/parametric/
+  seeded Monte Carlo VaR, VaR attribution, deterministic stress scenarios, and
+  cross-currency netting helpers.
 - `risk-bench`: Criterion harnesses for pretrade gate latency measurement.
 
 ## Scope

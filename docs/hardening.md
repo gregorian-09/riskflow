@@ -36,6 +36,39 @@ risk-core not found in registry (crates.io)
 Run semver checks after the first publish, or provide an explicit baseline rev
 when comparing against a previous local release commit.
 
+## Upstream Dependency Timing
+
+The specification requires a measured compile-cost check for `of_core 0.4.0`
+with default features disabled before treating it as the v1 `risk-core`
+dependency.
+
+The measurement crate was:
+
+```toml
+[dependencies]
+of_core = { version = "0.4.0", default-features = false }
+```
+
+The local command was:
+
+```bash
+CARGO_TARGET_DIR=/tmp/of-core-timing-target cargo build --timings
+```
+
+Local result:
+
+```text
+Compiling of_core v0.4.0
+Timing report saved to /tmp/of-core-timing-target/cargo-timings/cargo-timing-20260703T074009383Z-4e51656b90a6e84c.html
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.00s
+```
+
+Environment:
+
+- Hardware: Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, 4 cores / 8 threads.
+- Operating system: Linux 6.6.87.2-microsoft-standard-WSL2 x86_64.
+- Rust toolchain: `rustc 1.95.0 (59807616e 2026-04-14)`.
+
 ## Packaging Order
 
 Package verification for dependent crates resolves versioned path dependencies
