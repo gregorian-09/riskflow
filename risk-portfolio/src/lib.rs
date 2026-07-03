@@ -8,8 +8,8 @@
 //!
 //! v1 includes historical, parametric, seeded Monte Carlo, marginal, and
 //! component `VaR`, performance ratios, drawdown metrics, deterministic stress
-//! scenarios, and trusted cross-currency netting helpers. Options Greeks stay
-//! out of this crate until the isolated options layer exists.
+//! scenarios, and trusted cross-currency netting helpers. Options Greeks are
+//! not part of the v1 portfolio analytics surface.
 //!
 //! # Features
 //!

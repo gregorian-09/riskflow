@@ -20,6 +20,32 @@ Benchmarks cover:
 - evaluation while limit snapshots are repeatedly replaced,
 - command-line smoke reporting for release evidence.
 
+## Public Surface Inventory
+
+`risk-bench` exposes executable surfaces:
+
+- benchmark CLI: `cargo run -p risk-bench --release -- --iterations <N>`,
+- Criterion harness: `cargo bench -p risk-bench --bench evaluate`,
+- deterministic fixture example: `cargo run -p risk-bench --example benchmark_fixture`.
+
+## Output Semantics
+
+- `steady_read.median_ns` and `steady_read.p99_9_ns` describe evaluation
+  latency with a stable limit snapshot.
+- `contended_updates.median_ns` and `contended_updates.p99_9_ns` describe
+  evaluation latency while another thread replaces limit snapshots.
+- Results are environment-specific. Production claims require target hardware
+  evidence in the benchmark matrix.
+
+## Choosing The Right Command
+
+| Need | Command |
+|---|---|
+| Verify the executable path | `cargo run -p risk-bench --release -- --iterations 5000` |
+| Capture release smoke evidence | `cargo run -p risk-bench --release -- --iterations 50000` |
+| Compare code changes locally | `cargo bench -p risk-bench --bench evaluate` |
+| Verify fixture verdict | `cargo run -p risk-bench --example benchmark_fixture` |
+
 ## Command-Line Smoke
 
 Short local smoke:
@@ -84,6 +110,23 @@ Rows must include:
 
 Development-machine results are benchmark-harness checks only. Treat latency
 claims as production-like only when they come from documented target hardware.
+
+## Real-World Use Cases
+
+### Release benchmark evidence
+
+Run the release smoke command on approved hardware and archive both environment
+metadata and latency output.
+
+### Hot-path regression review
+
+Use Criterion to compare before and after changes to checks, limit storage, or
+market snapshot lookup behavior.
+
+### CI runner validation
+
+Run the short smoke command and fixture example when attaching a new benchmark
+runner.
 
 ## Maintainer Guidance
 

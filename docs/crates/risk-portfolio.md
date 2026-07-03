@@ -19,6 +19,44 @@ analytics require an explicit seed.
 | `python` | optional PyO3 wrappers |
 | `greeks` | documented non-surface for unsupported v1 options analytics |
 
+## Public API Inventory
+
+Primary public surface:
+
+- `performance`: `PerformanceSummary`, `summarize_returns`, ratio and drawdown
+  helpers.
+- `var`: `SimulationSeed`, `ParametricVarAttribution`, `VarError`, compact
+  and typed `VaR` functions.
+- `covariance`: `sample_covariance_matrix`.
+- `scenario`: `ScenarioShock`, `StressScenario`, `ScenarioResult`,
+  `NamedScenarioResult`, `ScenarioError`, stress runner functions.
+- `netting`: aggregate snapshot readiness, trusted notional conversion, and
+  price-source agreement helpers.
+- `python`: optional notebook-facing PyO3 module.
+
+## Type Semantics Reference
+
+- `PerformanceSummary` is descriptive analytics for a return series.
+- `VarError` explains invalid inputs for typed `try_*` `VaR` functions.
+- `SimulationSeed` makes Monte Carlo output reproducible.
+- `ParametricVarAttribution` assumes weights and covariance describe the same
+  ordered asset universe.
+- `StressScenario` applies additive shocks to ordered return vectors.
+- Netting helpers preserve `risk-core::MarketSnapshot` trust semantics.
+
+## Choosing The Right API
+
+| Need | Use |
+|---|---|
+| Basic return-series report | `summarize_returns` |
+| Historical tail loss | `try_historical_var` |
+| Normal approximation | `try_parametric_var` |
+| Seeded simulation | `try_monte_carlo_var` |
+| Portfolio attribution | `try_parametric_var_attribution` |
+| Aligned covariance matrix | `sample_covariance_matrix` |
+| Deterministic stress scenarios | `try_run_stress_scenarios` |
+| Trusted FX conversion | `convert_notional_to_currency` |
+
 ## Analytics Flow
 
 ```mermaid
@@ -177,6 +215,23 @@ assert_eq!(converted, Notional::new(200));
   positive-return return series.
 - `risk-portfolio/tests/fixtures/stress_scenarios.csv`: single and multi-asset
   stress shocks.
+
+## Real-World Use Cases
+
+### Daily analytics batch
+
+Compute return summaries, historical `VaR`, parametric attribution, and stress
+scenario results from controlled end-of-day inputs.
+
+### Independent model validation
+
+Use typed APIs and fixture files to reproduce assumptions, invalid-input
+handling, and deterministic results.
+
+### Notebook analysis
+
+Use the optional `python` feature when notebooks need selected analytics while
+keeping Rust implementation and tests authoritative.
 
 ## Maintainer Guidance
 

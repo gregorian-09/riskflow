@@ -52,6 +52,45 @@ sequenceDiagram
 | `audit` | auditable records for order, limit, and trading-state events |
 | `observability` | metrics snapshots, trace context, structured events, alerts |
 
+## Public API Inventory
+
+Primary public surface:
+
+- `PretradeGate`, `EvaluateRequest`, `LimitTable`.
+- `LimitSource`, `StaticLimitSource`, `FileLimitSource`, `parse_limit_table`.
+- `ParseLimitTableError`, `ParseLimitTableErrorKind`.
+- `OrderAuditRecord`, `LimitChangeAuditRecord`, `TradingStateAuditRecord`,
+  `GateAuditRecord`, `InMemoryAuditLog`.
+- `GateMetrics`, `GateMetricsSnapshot`, `TraceContext`,
+  `ObservedOrderEvent`, `ObservedLimitChangeEvent`,
+  `ObservedTradingStateEvent`, `PretradeAlert`, `AlertSeverity`.
+
+## Type Semantics Reference
+
+- `EvaluateRequest` is one order decision input. It should be built after
+  symbol resolution and instrument lookup.
+- `LimitTable` is the policy snapshot. Build or parse it outside the read path,
+  then install it atomically.
+- `PretradeGate` is synchronous and deterministic for a given request, market
+  snapshot, and limit snapshot.
+- `LimitSource` abstracts loading limits from deployment-specific storage
+  without changing the evaluation path.
+- Audit records are durable business events; observed events are telemetry
+  envelopes around those audit records.
+
+## Choosing The Right API
+
+| Need | Use |
+|---|---|
+| Fast order decision | `PretradeGate::evaluate` |
+| Decision plus audit payload | `PretradeGate::evaluate_with_audit` |
+| Operational trading halt | `disable_trading_with_audit` |
+| Operational resume | `enable_trading_with_audit` |
+| Atomic limit replacement | `update_limits` |
+| Audited limit replacement | `update_limits_with_audit` |
+| Versioned file parsing | `parse_limit_table` |
+| Counter export | `metrics_snapshot` |
+
 ## Limit Table Lifecycle
 
 `LimitTable` is mutable during construction and immutable once installed in the
@@ -244,6 +283,23 @@ system they use. The crate intentionally does not depend on a logging runtime.
 - `risk-pretrade/tests/adversarial_pretrade.rs`: fail-closed adversarial
   scenarios.
 - `risk-pretrade/tests/golden_pretrade.rs`: CSV fixture decisions.
+
+## Real-World Use Cases
+
+### FIX or order-entry adapter
+
+Resolve venue symbols, fetch static instrument reference data, build
+`EvaluateRequest`, call the gate, and only forward orders with a pass verdict.
+
+### Limit approval workflow
+
+Parse the proposed limit table, compare summaries outside the hot path, replace
+the active snapshot with audit evidence, and monitor metrics after the change.
+
+### Observability bridge
+
+Wrap each audit record in a traced observed event and export it through the
+adapter's logging, metrics, or tracing system.
 
 ## Maintainer Guidance
 

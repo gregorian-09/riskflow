@@ -2,7 +2,7 @@
 
 This packet defines what an external reviewer should inspect. It does not claim
 that an independent audit has been completed; that requires a named reviewer
-outside the implementation author.
+outside the implementation team.
 
 ## Scope
 

@@ -137,6 +137,65 @@ Read more:
 - [Benchmark methodology](docs/benchmarks.md)
 - [Benchmark matrix](docs/benchmark_matrix.md)
 
+## Public API Inventory
+
+Primary exported surfaces by crate:
+
+| Crate | Public Surface |
+|---|---|
+| `risk-core` | `InstrumentId`, `Price`, `Qty`, `Notional`, `Timestamp`, `CurrencyId`, `CurrencyPair`, `Instrument`, `InstrumentCatalog`, `SymbolRegistry`, `SymbolKey`, `MarketSnapshot`, `MarketPrice`, `DataQuality`, `RiskVerdict`, `RiskWeight`, schema descriptors |
+| `risk-pretrade` | `PretradeGate`, `EvaluateRequest`, `LimitTable`, `LimitSource`, `StaticLimitSource`, `FileLimitSource`, `parse_limit_table`, audit records, `GateMetrics`, `Observed*Event`, `PretradeAlert` |
+| `risk-portfolio` | performance summaries, covariance construction, historical/parametric/Monte Carlo `VaR`, marginal/component attribution, deterministic stress scenarios, trusted netting helpers, optional Python feature |
+| `risk-bench` | release benchmark CLI, deterministic benchmark fixture example, Criterion pretrade evaluation benchmark |
+
+## Orderflow Compatibility
+
+Riskflow uses `of_core` only at the market-data boundary:
+
+- `risk_core::SymbolKey` re-exports `of_core::SymbolId` for venue/symbol
+  identity.
+- `risk_core::DataQualityFlags` re-exports `of_core::DataQualityFlags` so
+  upstream feed health can fail closed inside risk checks.
+
+Riskflow does not depend on `of_core` analytics, book reconstruction, or signal
+state. Orderflow remains the market-data and analytics producer; Riskflow
+consumes normalized identity and quality signals to make risk decisions.
+
+## Choosing The Right Surface
+
+| Need | Use |
+|---|---|
+| Normalize venue symbols before order evaluation | `risk-core::SymbolRegistry` and `SymbolKey` |
+| Represent prices, quantities, and exposure in pretrade code | `risk-core::Price`, `Qty`, `Notional` |
+| Validate market-data freshness and quality | `risk-core::MarketSnapshot` trusted accessors |
+| Evaluate a single order against active limits | `risk-pretrade::PretradeGate::evaluate` |
+| Produce audit evidence for an order decision | `risk-pretrade::PretradeGate::evaluate_with_audit` |
+| Load limits from a versioned text file | `risk-pretrade::FileLimitSource` or `parse_limit_table` |
+| Summarize historical return performance | `risk-portfolio::performance::summarize_returns` |
+| Compute deterministic `VaR` and stress evidence | `risk-portfolio::var` and `risk-portfolio::scenario` |
+| Collect release latency evidence | `risk-bench` CLI and benchmark matrix |
+
+## Real-World Use Cases
+
+### Order-entry pretrade gate
+
+Build reference data at startup, resolve adapter symbols into `InstrumentId`,
+install a limit snapshot, evaluate every candidate order through
+`PretradeGate`, and export audit records to the surrounding order-management
+system.
+
+### Portfolio validation and reporting
+
+Use `risk-portfolio` on return series, covariance inputs, and deterministic
+stress scenarios to produce reproducible analytics for validation packs,
+notebooks, or daily risk reports.
+
+### Release governance evidence
+
+Run the workspace quality gates, rustdoc, examples, dependency checks, model
+validation commands, and benchmark smoke command before a release. Store the
+outputs with the release evidence bundle.
+
 ## End-To-End Pretrade Flow
 
 ```mermaid

@@ -13,7 +13,7 @@ behavior, validation, and operational impact.
 - Fixed-point core types for price, quantity, notional, timestamps, and
   copyable instrument ids.
 - Instrument and position taxonomies for equities, spot FX, spot crypto,
-  futures, perpetual swaps, and v1 option placeholders.
+  futures, perpetual swaps, and unsupported v1 option taxonomy.
 - Market snapshot trust checks for staleness, source agreement, FX conversion,
   aggregate exposure snapshots, and upstream data-quality flags.
 - Pretrade gate with per-order notional, aggregate notional, position limit,

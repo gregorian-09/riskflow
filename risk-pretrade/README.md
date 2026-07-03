@@ -14,6 +14,19 @@ Primary documentation:
 - [Validation](https://github.com/gregorian-09/riskflow/blob/master/docs/validation.md)
 - [Observability](https://github.com/gregorian-09/riskflow/blob/master/docs/observability.md)
 
+## Public API Inventory
+
+Primary public types:
+
+- Gate and requests: `PretradeGate`, `EvaluateRequest`, `LimitTable`.
+- Limit loading: `LimitSource`, `StaticLimitSource`, `FileLimitSource`,
+  `parse_limit_table`, `ParseLimitTableError`, `ParseLimitTableErrorKind`.
+- Audit records: `OrderAuditRecord`, `LimitChangeAuditRecord`,
+  `TradingStateAuditRecord`, `GateAuditRecord`, `InMemoryAuditLog`.
+- Observability: `GateMetrics`, `GateMetricsSnapshot`, `TraceContext`,
+  `ObservedOrderEvent`, `ObservedLimitChangeEvent`,
+  `ObservedTradingStateEvent`, `PretradeAlert`, `AlertSeverity`.
+
 ## Runtime Contract
 
 `PretradeGate::evaluate` is synchronous and fail-closed. It accepts an
@@ -37,6 +50,33 @@ observe partially applied limit changes.
 
 Any missing, stale, low-quality, overflowing, or unsupported input fails
 closed.
+
+## Type Semantics Reference
+
+- `EvaluateRequest` is the complete input for one order decision. It contains
+  resolved static instrument data, current position, available margin, submitted
+  price, trusted market snapshot, and evaluation timestamp.
+- `LimitTable` is the active immutable policy snapshot once installed in
+  `PretradeGate`.
+- `PretradeGate` owns operational state: trading enabled/disabled, current
+  limits, and metrics counters.
+- `OrderAuditRecord` is the durable decision payload for one evaluated order.
+- `ObservedOrderEvent` combines adapter trace context, audit payload, and a
+  metrics snapshot for logs or telemetry.
+- `PretradeAlert` maps verdict categories into operator-facing severity.
+
+## Choosing The Right API
+
+| Need | Use |
+|---|---|
+| Evaluate an order without audit payload | `PretradeGate::evaluate` |
+| Evaluate and capture an order audit record | `PretradeGate::evaluate_with_audit` |
+| Replace limits atomically | `PretradeGate::update_limits` |
+| Replace limits with audit evidence | `PretradeGate::update_limits_with_audit` |
+| Disable or enable trading operationally | `disable_trading_with_audit` / `enable_trading_with_audit` |
+| Load a versioned limit file | `FileLimitSource` |
+| Parse limit text already loaded by an adapter | `parse_limit_table` |
+| Export counters | `PretradeGate::metrics_snapshot` |
 
 ```mermaid
 sequenceDiagram
@@ -140,6 +180,26 @@ cargo run -p risk-pretrade --example end_to_end_adapter
 The example shows reference-data loading, symbol resolution, market snapshot
 construction, gate evaluation, audit logging, and observed event construction
 in one executable flow.
+
+## Real-World Use Cases
+
+### Synchronous order-entry control
+
+Call `PretradeGate::evaluate` before an order leaves the adapter. Treat
+`Reject` and `Indeterminate` as non-send outcomes and preserve the verdict for
+operator review.
+
+### Limit-change workflow
+
+Load a versioned limit file, build a full `LimitTable`, replace the active
+snapshot atomically, and store the returned `LimitChangeAuditRecord` alongside
+the change ticket.
+
+### Production telemetry bridge
+
+Use `TraceContext`, `ObservedOrderEvent`, and `PretradeAlert` to export
+decision telemetry without forcing the crate to depend on a specific logging or
+metrics runtime.
 
 ## Read Next
 

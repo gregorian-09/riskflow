@@ -14,6 +14,22 @@ Primary documentation:
 - [Model Validation](https://github.com/gregorian-09/riskflow/blob/master/docs/model_validation.md)
 - [Validation](https://github.com/gregorian-09/riskflow/blob/master/docs/validation.md)
 
+## Public API Inventory
+
+Primary public modules and functions:
+
+- `performance`: `summarize_returns`, `mean_return`, `sample_std_dev`,
+  `sharpe_ratio`, `sortino_ratio`, `max_drawdown`, `calmar_ratio`,
+  `cumulative_return`, `PerformanceSummary`.
+- `var`: historical, parametric, seeded Monte Carlo, portfolio, marginal,
+  component, and attribution `VaR` APIs plus `VarError`.
+- `covariance`: `sample_covariance_matrix`.
+- `scenario`: `StressScenario`, `ScenarioShock`, `ScenarioResult`,
+  `try_run_stress_scenarios`, `try_apply_return_shocks`.
+- `netting`: trusted aggregate snapshot and FX conversion helpers built on
+  `risk-core::MarketSnapshot`.
+- `python`: optional PyO3 module when the `python` feature is enabled.
+
 ## Runtime Contract
 
 `risk-portfolio` is for offline or asynchronous workflows: validation packs,
@@ -23,6 +39,32 @@ the pretrade hot path and does not make order-routing decisions.
 The crate exposes compact APIs for common analytics and typed `try_*` APIs when
 callers need diagnostics for empty data, invalid confidence levels,
 non-finite inputs, or shape mismatches.
+
+## Type Semantics Reference
+
+- Compact APIs return `Option<T>` when callers only need a value-or-no-value
+  result.
+- Typed `try_*` APIs return domain errors such as `VarError` or
+  `ScenarioError` when callers need diagnostics.
+- `SimulationSeed` is part of the Monte Carlo input contract. The same seed
+  produces the same result for the same parameters.
+- `ParametricVarAttribution` contains portfolio, marginal, and component `VaR`
+  values for one ordered asset universe.
+- `StressScenario` applies additive return shocks by asset index; callers own
+  the mapping between asset indexes and portfolio constituents.
+
+## Choosing The Right API
+
+| Need | Use |
+|---|---|
+| Simple performance summary | `performance::summarize_returns` |
+| Deterministic historical tail loss | `var::historical_var` or `try_historical_var` |
+| Normal approximation with supported confidence levels | `var::parametric_var` |
+| Seeded simulation evidence | `var::monte_carlo_var` |
+| Portfolio `VaR` attribution | `var::try_parametric_var_attribution` |
+| Aligned return covariance | `covariance::sample_covariance_matrix` |
+| Named deterministic stress cases | `scenario::try_run_stress_scenarios` |
+| Trusted FX conversion | `netting::convert_notional_to_currency` |
 
 ## Analytics Surface
 
@@ -106,6 +148,23 @@ let scenarios = [
 let results = try_run_stress_scenarios(&base_returns, &weights, &scenarios).unwrap();
 assert_eq!(results[0].name, "broad_riskoff");
 ```
+
+## Real-World Use Cases
+
+### Daily portfolio report
+
+Compute performance ratios, historical `VaR`, parametric attribution, and named
+stress losses from controlled return series and covariance inputs.
+
+### Model-validation pack
+
+Use the typed `try_*` APIs and golden fixtures to produce reproducible evidence
+for independent model review.
+
+### Notebook bridge
+
+Enable the `python` feature when a notebook workflow needs access to selected
+Rust analytics while keeping the Rust API as the source of truth.
 
 ## Read Next
 

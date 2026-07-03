@@ -28,6 +28,37 @@ Primary documentation:
 - `RiskVerdict` and indeterminate/reject reasons,
 - schema version descriptors.
 
+## Public API Inventory
+
+Public types and functions most users interact with:
+
+- Identity and numeric wrappers: `InstrumentId`, `Price`, `Qty`, `Notional`,
+  `Timestamp`.
+- Currency types: `CurrencyId`, `CurrencyPair`.
+- Instruments: `AssetClass`, `Instrument`, `EquitySpec`, `FxSpec`,
+  `CryptoSpotSpec`, `FutureSpec`, `PerpSpec`, `OptionSpec`,
+  `InstrumentCatalog`, `RiskExposure`.
+- Market data: `MarketSnapshot`, `MarketPrice`, `DataQuality`,
+  `DataQualityFlags`, `RiskDataQualityFlags`.
+- Symbol mapping: `SymbolKey`, `SymbolRegistry`, `RegisterSymbolError`.
+- Decisions: `RiskWeight`, `RiskVerdict`, `RejectReason`,
+  `IndeterminateReason`.
+- Schemas: `SchemaVersion`, `SchemaRecordKind`, `SchemaDescriptor`,
+  `current_schema`.
+
+## Orderflow Boundary
+
+`risk-core` intentionally reuses the canonical Orderflow identity and quality
+types:
+
+- `SymbolKey` is `of_core::SymbolId`.
+- `DataQualityFlags` is `of_core::DataQualityFlags`.
+
+Adapters can pass normalized Orderflow symbols and upstream feed-health flags
+into Riskflow without lossy translation. Riskflow then converts those boundary
+values into cheap internal ids and fail-closed quality decisions before the
+pretrade path runs.
+
 ## Design Contract
 
 `risk-core` does not run policy and does not perform I/O. It provides the
@@ -119,6 +150,50 @@ indeterminate reasons.
 | Market data | `MarketSnapshot`, `MarketPrice`, `DataQuality` |
 | Decisions | `RiskVerdict`, `RiskWeight`, `RejectReason`, `IndeterminateReason` |
 | Schemas | `SchemaVersion`, `SchemaRecordKind`, `current_schema` |
+
+## Type Semantics Reference
+
+- `InstrumentId` is the hot-path key. It is compact and copyable; adapters
+  should resolve text symbols into it before order evaluation.
+- `Price`, `Qty`, and `Notional` wrap integer values. They do not impose a
+  universal market scale; venue reference data and adapters own scale policy.
+- `Timestamp` is a monotonic nanosecond-style value used for freshness checks.
+- `Instrument` describes static reference data. The pretrade gate receives an
+  `Instrument`, not a venue symbol.
+- `MarketSnapshot` is the trusted market-data boundary. Consumers should call
+  trusted accessors rather than reading raw maps.
+- `RiskVerdict::Indeterminate` represents uncertainty. It is not a soft pass.
+
+## Choosing The Right Type
+
+| Need | Use |
+|---|---|
+| External venue and symbol identity | `SymbolKey` |
+| Pretrade lookup key | `InstrumentId` |
+| Static reference data | `InstrumentCatalog` and `Instrument` |
+| Trusted price or FX rate | `MarketSnapshot::trusted_price` / `trusted_fx_rate` |
+| Whole-book exposure freshness | `MarketSnapshot::trusted_aggregate_notional` |
+| Fixed-point exposure math | `Notional::checked_linear` |
+| Schema declaration for external records | `current_schema` |
+
+## Real-World Use Cases
+
+### Adapter startup
+
+Load reference data, register every Orderflow symbol in `SymbolRegistry`, build
+an `InstrumentCatalog`, then start order evaluation only after those structures
+are complete.
+
+### Market-data trust boundary
+
+Insert prices, FX rates, aggregate exposure, and upstream quality flags into
+`MarketSnapshot`. Downstream risk checks receive `IndeterminateReason` when
+data is missing, stale, low quality, or source-disagreed.
+
+### Audit and schema consistency
+
+Use `SchemaDescriptor` and `SchemaRecordKind` to label exported limit,
+instrument, market, audit, and validation records with explicit versions.
 
 ## Read Next
 

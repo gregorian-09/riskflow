@@ -43,6 +43,49 @@ pre-built reference data.
 | `schema` | schema version constants and descriptors | parsers, docs, release governance |
 | `verdict` | `RiskWeight`, `RiskVerdict`, reasons | all risk decisions |
 
+## Public API Inventory
+
+Primary public surface:
+
+- `InstrumentId`, `Price`, `Qty`, `Notional`, `Timestamp`.
+- `CurrencyId`, `CurrencyPair`.
+- `AssetClass`, `Instrument`, `EquitySpec`, `FxSpec`, `CryptoSpotSpec`,
+  `FutureSpec`, `PerpSpec`, `OptionSpec`, `InstrumentCatalog`.
+- `SymbolKey`, `SymbolRegistry`.
+- `MarketSnapshot`, `MarketPrice`, `DataQuality`, `DataQualityFlags`,
+  `RiskDataQualityFlags`.
+- `RiskWeight`, `RiskVerdict`, `RejectReason`, `IndeterminateReason`.
+- `SchemaVersion`, `SchemaRecordKind`, `SchemaDescriptor`, `current_schema`.
+
+## Type Semantics Reference
+
+- `SymbolKey` is the external Orderflow symbol identity. It is suitable for
+  adapter and reference-data boundaries.
+- `InstrumentId` is the compact internal identity used after startup
+  resolution.
+- `InstrumentCatalog` is static reference data. Duplicate instrument ids are
+  rejected to keep risk decisions unambiguous.
+- `MarketSnapshot` is a trust boundary, not just a map. It enforces freshness,
+  upstream quality, risk-local quality, and source-agreement policy.
+- `DataQualityFlags` are upstream Orderflow feed flags. `RiskDataQualityFlags`
+  represent risk-local conditions such as stale aggregate exposure.
+- `RiskWeight` is the exposure bridge between static instruments and pretrade
+  checks.
+- `RiskVerdict` separates deterministic rejection from indeterminate
+  uncertainty.
+
+## Choosing The Right Type
+
+| Need | Use |
+|---|---|
+| Adapter symbol identity | `SymbolKey` |
+| Hot-path instrument lookup | `InstrumentId` |
+| Static reference data | `InstrumentCatalog` |
+| Trusted market price | `MarketSnapshot::trusted_price` |
+| Trusted FX conversion | `MarketSnapshot::convert_notional` |
+| Aggregate exposure freshness | `MarketSnapshot::trusted_aggregate_notional` |
+| External schema declaration | `current_schema` |
+
 ## Fixed-Point Types
 
 The pretrade path uses fixed-point wrappers around integer primitives. The
@@ -169,6 +212,25 @@ flowchart LR
 
 Linear instruments use checked fixed-point notional. Options intentionally
 return `UnsupportedOption` in v1.
+
+## Real-World Use Cases
+
+### Order adapter startup
+
+Build `SymbolRegistry` and `InstrumentCatalog` before accepting live order
+traffic. Unknown symbols should fail closed before constructing an
+`EvaluateRequest`.
+
+### Upstream market-data gating
+
+Pass `of_core::DataQualityFlags` through `DataQuality::from_upstream` so stale,
+gap, degraded, or otherwise unsafe upstream feeds cannot produce a pass.
+
+### Versioned external records
+
+Use `SchemaRecordKind` and `current_schema` when exporting or validating
+instrument reference data, limit tables, market snapshots, audit records, or
+portfolio validation files.
 
 ## Verdict Types
 
