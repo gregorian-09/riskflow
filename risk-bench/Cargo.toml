@@ -5,7 +5,8 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Benchmark harnesses for the Risk workspace."
+readme = "README.md"
+description = "Benchmark harnesses for the Riskflow workspace."
 publish = false
 
 [dependencies]
