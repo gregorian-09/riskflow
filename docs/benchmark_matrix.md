@@ -1,8 +1,8 @@
 # Benchmark Matrix
 
 The risk gate must be benchmarked on real target hardware before production
-adoption. Local WSL numbers are useful for development but are not sufficient
-for institutional latency claims.
+adoption. Development-machine numbers are useful for checking the benchmark
+harness, but they are not sufficient for institutional latency claims.
 
 ## Required Command
 
@@ -10,11 +10,11 @@ for institutional latency claims.
 cargo run -p risk-bench --release -- --iterations 50000
 ```
 
-## Current Matrix
+## Published Matrix
 
 | Environment | CPU | OS | Rust | Iterations | Steady Median ns | Steady p99.9 ns | Contended Median ns | Contended p99.9 ns | Status |
-|---|---|---|---|---:|---:|---:|---:|---:|---|
-| Local WSL2 development | Intel i7-8650U, 4C/8T | Linux 6.6.87.2-microsoft-standard-WSL2 | 1.95.0 | 50000 | 200 | 1800 | 300 | 16300 | Development baseline |
+|---|---|---|---|---|---|---|---|---|---|
+| _No production-like rows published yet_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | Awaiting release evidence |
 
 ## Required Production Rows
 

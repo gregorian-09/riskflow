@@ -82,9 +82,10 @@ Rows must include:
 - p99.9 latency,
 - whether the runner was a development, CI, or production-like host.
 
-Laptop and WSL results are development baselines only.
+Development-machine results are benchmark-harness checks only. Treat latency
+claims as production-like only when they come from documented target hardware.
 
-## Contributor Maintenance
+## Maintainer Guidance
 
 Add a benchmark when a public runtime characteristic changes:
 

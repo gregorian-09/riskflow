@@ -27,7 +27,7 @@ done
 grep -q "@gregorian-09" .github/CODEOWNERS
 grep -q "External reviewer approval is required before merge" .github/pull_request_template.md
 grep -q "Independent validator" docs/model_validation.md
-grep -q "External reviewer required" docs/security_review.md
+grep -q "named reviewer completes the required actions" docs/security_review.md
 grep -q "target trading server" docs/benchmark_matrix.md
 
 if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then

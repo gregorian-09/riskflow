@@ -36,7 +36,8 @@ Recommended:
 - Portfolio analytics may use `f64`, but simulation must be deterministic.
 - No `unsafe` code.
 - No trait objects or heap allocation in pretrade check logic.
-- `risk-pretrade` and `risk-portfolio` must not depend on `risk-options`.
+- `risk-pretrade` and `risk-portfolio` must not depend on options-pricing
+  implementation crates.
 - Public APIs need rustdoc.
 - Fallible public APIs should use typed errors when callers need diagnostics.
 

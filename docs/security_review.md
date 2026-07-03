@@ -32,15 +32,18 @@ Out of scope:
 5. Review all parsers for malformed input handling.
 6. Review all fixed-point arithmetic paths for checked operations.
 7. Review dependency tree and advisory exceptions.
-8. Review CI boundary checks for `risk-options`.
+8. Review CI boundary checks for optional options-pricing implementation crates.
 
-## Sign-Off Record
+## Sign-Off Template
+
+Use this table in an external review packet or release evidence bundle after a
+named reviewer completes the required actions.
 
 | Reviewer | Organization | Date | Scope | Decision | Notes |
 |---|---|---|---|---|---|
-| Pending | Pending | Pending | Pending | Pending | External reviewer required. |
+|  |  |  |  |  |  |
 
-## Current Internal Evidence
+## Evidence Sources
 
 The repository contains:
 

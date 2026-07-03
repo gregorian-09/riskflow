@@ -17,7 +17,7 @@ analytics require an explicit seed.
 | `scenario` | deterministic return shocks and named stress scenarios |
 | `netting` | cross-currency helper wrappers around trusted market snapshots |
 | `python` | optional PyO3 wrappers |
-| `greeks` | documented non-surface for v1 options work |
+| `greeks` | documented non-surface for unsupported v1 options analytics |
 
 ## Analytics Flow
 
@@ -178,7 +178,7 @@ assert_eq!(converted, Notional::new(200));
 - `risk-portfolio/tests/fixtures/stress_scenarios.csv`: single and multi-asset
   stress shocks.
 
-## Contributor Maintenance
+## Maintainer Guidance
 
 Most users should consume the existing analytics functions directly. New
 analytics should enter this crate only when their assumptions, input validation,

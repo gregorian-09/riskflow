@@ -4,9 +4,9 @@
 order leaves the system. It evaluates a fixed sequence of deterministic checks
 against immutable limit snapshots and trusted market data.
 
-The design goal is boring predictability: no user-selected concurrency model,
-no trait-object check pipeline, no hidden default pass on missing data, and no
-floating-point arithmetic in limit comparisons.
+The design goal is deterministic predictability: no user-selected concurrency
+model, no trait-object check pipeline, no hidden default pass on missing data,
+and no floating-point arithmetic in limit comparisons.
 
 ## End-To-End Code Flow
 
@@ -202,7 +202,7 @@ basis-point band.
 ## Observability Example
 
 ```rust
-use risk_core::{RiskVerdict, Timestamp};
+use risk_core::{AssetClass, InstrumentId, Notional, Price, Qty, RiskVerdict, Timestamp};
 use risk_pretrade::{
     GateMetrics, ObservedOrderEvent, OrderAuditRecord, PretradeAlert, TraceContext,
 };
@@ -214,12 +214,23 @@ let snapshot = metrics.snapshot();
 assert_eq!(snapshot.evaluations, 1);
 assert!(PretradeAlert::from_verdict(RiskVerdict::Pass).is_none());
 
-# let audit: OrderAuditRecord = todo!("adapter builds this from evaluate_with_audit");
-# let _event = ObservedOrderEvent::new(
-#     TraceContext { correlation_id: 7, sequence: 1, observed_at: Timestamp(1) },
-#     audit,
-#     snapshot,
-# );
+let audit = OrderAuditRecord {
+    instrument_id: InstrumentId(1),
+    asset_class: AssetClass::Equity,
+    qty: Qty::new(5),
+    current_position: Qty::new(0),
+    available_margin: Notional::new(1_000),
+    order_price: Price::new(100),
+    evaluated_at: Timestamp(1),
+    verdict: RiskVerdict::Pass,
+};
+let event = ObservedOrderEvent::new(
+    TraceContext { correlation_id: 7, sequence: 1, observed_at: Timestamp(1) },
+    audit,
+    snapshot,
+);
+
+assert_eq!(event.trace.correlation_id, 7);
 ```
 
 Adapters are expected to export `ObservedOrderEvent` into whatever telemetry
@@ -234,7 +245,7 @@ system they use. The crate intentionally does not depend on a logging runtime.
   scenarios.
 - `risk-pretrade/tests/golden_pretrade.rs`: CSV fixture decisions.
 
-## Contributor Maintenance
+## Maintainer Guidance
 
 Most integrations should use the existing `PretradeGate` and limit-source
 surface. Changes to check ordering, fail-closed behavior, or limit parsing are

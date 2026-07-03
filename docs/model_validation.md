@@ -60,14 +60,14 @@ RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 - Confirm stale price, stale aggregate, and bad quality inputs never pass.
 - Confirm benchmark numbers are produced by the documented command and machine.
 
-## Sign-Off Record
+## Sign-Off Template
+
+Use this table in release evidence or an external validation packet. Do not
+mark a release approved until the independent validator has reproduced the
+validation commands, reviewed the assumptions above, and recorded a decision.
 
 | Role | Name | Organization | Date | Decision | Notes |
 |---|---|---|---|---|---|
-| Model owner | Pending | Pending | Pending | Pending | Implementation pack prepared. |
-| Independent validator | Pending | Pending | Pending | Pending | Must be completed by a reviewer outside the implementation author. |
-| Risk approver | Pending | Pending | Pending | Pending | Required before production use. |
-
-Do not mark this pack approved until the independent validator has reproduced
-the validation commands, reviewed the assumptions above, and recorded a
-decision in the table.
+| Model owner |  |  |  |  |  |
+| Independent validator |  |  |  |  |  |
+| Risk approver |  |  |  |  |  |

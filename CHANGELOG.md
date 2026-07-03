@@ -36,9 +36,9 @@ behavior, validation, and operational impact.
   operations, observability, schema policy, validation, hardening, governance,
   security review, and contributor guidance.
 
-### Deferred
+### Not Included
 
-- `risk-options` for options pricing and Greeks.
-- `risk-ffi` for C/Python/Java-style ABI surfaces.
+- Options pricing and Greeks beyond unsupported v1 taxonomy.
+- C, Python, or Java-style ABI surfaces outside the Rust crate APIs.
 - Regulatory capital, credit risk, liquidity risk, live margin ingestion, and
   AI/ML risk-determining models.

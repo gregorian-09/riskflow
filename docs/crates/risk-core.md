@@ -37,7 +37,7 @@ pre-built reference data.
 | `types` | `InstrumentId`, `Price`, `Qty`, `Notional`, `Timestamp` | every crate |
 | `currency` | `CurrencyId`, `CurrencyPair` | market snapshots, netting |
 | `instrument` | `Instrument`, specs, `RiskExposure`, `InstrumentCatalog` | pretrade, portfolio |
-| `position` | dynamic `Position`, `MarginState`, `Funding` | adapters, future portfolio state |
+| `position` | dynamic `Position`, `MarginState`, `Funding` | adapters and analytics |
 | `market` | `MarketSnapshot`, `MarketPrice`, data-quality flags | pretrade, netting |
 | `symbol` | `SymbolRegistry`, `SymbolKey` | adapters, validation |
 | `schema` | schema version constants and descriptors | parsers, docs, release governance |
@@ -194,7 +194,7 @@ price are not the same operational event.
 Use `current_schema(SchemaRecordKind::LimitTable)` when a parser, exporter, or
 adapter needs to declare which schema family it emits.
 
-## Contributor Maintenance
+## Maintainer Guidance
 
 Most users should not need to modify `risk-core`; it is the shared contract
 crate. Changes here affect semver, schemas, validation fixtures, and downstream
@@ -220,7 +220,7 @@ in the same pull request.
 4. Document compatibility in `docs/schemas.md`.
 5. Add parser or fixture tests.
 
-## Tests To Read First
+## Source Map
 
 - `risk-core/src/types.rs`: checked arithmetic.
 - `risk-core/src/market.rs`: trusted market-data behavior.

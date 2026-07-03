@@ -1,7 +1,7 @@
-# Benchmark Report
+# Benchmark Methodology
 
 This file records the reproducible benchmark method for the pretrade gate.
-Update it with the target machine details whenever publishing release numbers.
+Use it to produce release evidence and benchmark-matrix rows.
 
 ## Command
 
@@ -19,20 +19,26 @@ cargo run -p risk-bench --release -- --iterations 50000
 - Results: record median and p99.9 latency for steady reads and contended
   limit updates.
 
-## Local Report
+## Report Template
 
-This local run verifies the report path and gives a baseline for development
-machines. Treat it as environment-specific, not as a universal latency claim.
+Record benchmark evidence in this shape:
 
-- Hardware: Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, 4 cores / 8 threads.
-- Operating system: Linux 6.6.87.2-microsoft-standard-WSL2 x86_64.
-- Rust toolchain: `rustc 1.95.0 (59807616e 2026-04-14)`.
+- Hardware:
+- Operating system:
+- Rust toolchain:
 - Build profile: `--release`.
+- Commit:
+- Runner class: development, CI reference, or production-like.
+- Concurrent load:
 
 ```text
 iterations: 50000
-steady_read.median_ns: 200
-steady_read.p99_9_ns: 1800
-contended_updates.median_ns: 300
-contended_updates.p99_9_ns: 16300
+steady_read.median_ns: <value>
+steady_read.p99_9_ns: <value>
+contended_updates.median_ns: <value>
+contended_updates.p99_9_ns: <value>
 ```
+
+Development-machine results can validate the benchmark harness, but production
+latency claims require production-like hardware and a recorded benchmark-matrix
+row.

@@ -37,14 +37,14 @@ flowchart LR
 Rules:
 
 - `risk-core` does not depend on workspace risk crates.
-- `risk-pretrade` does not depend on `risk-portfolio` or `risk-options`.
-- `risk-portfolio` does not depend on `risk-pretrade` or `risk-options`.
+- `risk-pretrade` does not depend on `risk-portfolio` or options-pricing crates.
+- `risk-portfolio` does not depend on `risk-pretrade` or options-pricing crates.
 - `risk-bench` may depend on crates it benchmarks.
 - Optional integration crates must stay outside the active runtime dependency
   path unless they are added through a documented API and schema review.
 
 CI checks that `risk-pretrade` and `risk-portfolio` do not depend on
-`risk-options`.
+options-pricing implementation crates.
 
 ## Pretrade Evaluation Flow
 

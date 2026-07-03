@@ -1,4 +1,4 @@
-# Hardening Checks
+# Hardening Policy
 
 Run these checks before release:
 
@@ -19,62 +19,45 @@ when `nalgebra` can be upgraded under the workspace MSRV.
 
 ## Coverage
 
-The current tarpaulin command excludes optional Python bindings because PyO3's
-instrumented test link can require Python linker details that are not needed by
-normal `cargo test --workspace --all-features`. The last local hardening run
-reported 70.30% line coverage on the core Rust path.
+Coverage reports are release evidence, not API documentation. Generate them
+with `cargo tarpaulin` and attach the LCOV artifact to the release packet.
+Optional Python bindings may require environment-specific linker setup; when
+they are excluded from a coverage run, record that exclusion in the release
+evidence rather than weakening the normal `cargo test --workspace --all-features`
+gate.
 
 ## Semver
 
-`cargo semver-checks --workspace` is not actionable until the crates have a
-published baseline. The current result is:
-
-```text
-risk-core not found in registry (crates.io)
-```
-
-Run semver checks after the first publish, or provide an explicit baseline rev
-when comparing against a previous local release commit.
+Run semver checks for every public release after a stable baseline exists. For
+published crates, compare against the latest released version. For private or
+pre-publication reviews, compare against the previous release tag or an
+explicit baseline commit.
 
 ## Upstream Dependency Timing
 
-The specification requires a measured compile-cost check for `of_core 0.4.0`
-with default features disabled before treating it as the v1 `risk-core`
-dependency.
-
-The measurement crate was:
+Measure compile-cost impact when adding or materially changing foundational
+dependencies. For `of_core`, use default features disabled unless a documented
+integration requires otherwise:
 
 ```toml
 [dependencies]
 of_core = { version = "0.4.0", default-features = false }
 ```
 
-The local command was:
+Recommended timing command:
 
 ```bash
 CARGO_TARGET_DIR=/tmp/of-core-timing-target cargo build --timings
 ```
 
-Local result:
-
-```text
-Compiling of_core v0.4.0
-Timing report saved to /tmp/of-core-timing-target/cargo-timings/cargo-timing-20260703T074009383Z-4e51656b90a6e84c.html
-Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.00s
-```
-
-Environment:
-
-- Hardware: Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz, 4 cores / 8 threads.
-- Operating system: Linux 6.6.87.2-microsoft-standard-WSL2 x86_64.
-- Rust toolchain: `rustc 1.95.0 (59807616e 2026-04-14)`.
+Record the dependency version, enabled features, command output, hardware,
+operating system, Rust version, and timing artifact path in release evidence.
 
 ## Packaging Order
 
 Package verification for dependent crates resolves versioned path dependencies
 through the registry after Cargo removes local `path` entries from packaged
-manifests. Because the public registry already contains a different
-`risk-core 0.1.0`, dependent package verification is not authoritative until
-this workspace has a published matching core crate or adopts unique crate names.
-Verify `risk-core` first, then verify and publish downstream crates against the
-published core baseline.
+manifests. Verify and publish shared foundational crates before downstream
+crates that depend on them. For this workspace, verify `risk-core` first, then
+verify `risk-pretrade`, `risk-portfolio`, and benchmark or integration crates
+against the published or explicitly patched core baseline.
