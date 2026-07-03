@@ -24,7 +24,7 @@ for path in "${required_files[@]}"; do
   fi
 done
 
-grep -q "@gregorian-rayne" .github/CODEOWNERS
+grep -q "@gregorian-09" .github/CODEOWNERS
 grep -q "External reviewer approval is required before merge" .github/pull_request_template.md
 grep -q "Independent validator" docs/model_validation.md
 grep -q "External reviewer required" docs/security_review.md

@@ -16,7 +16,7 @@ Required repository settings:
 5. Dismiss stale approvals when new commits are pushed.
 6. Require conversation resolution before merging.
 
-The `CODEOWNERS` file assigns sensitive paths to `@gregorian-rayne`, making
+The `CODEOWNERS` file assigns sensitive paths to `@gregorian-09`, making
 that review mandatory when branch protection has Code Owner review enabled.
 
 ## Release Evidence

@@ -12,7 +12,7 @@ edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/gregorian-rayne/risk-crate"
+repository = "https://github.com/gregorian-09/riskflow"
 keywords = ["risk", "trading", "portfolio", "pretrade", "quant"]
 categories = ["finance", "mathematics"]
 

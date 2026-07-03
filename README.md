@@ -1,6 +1,6 @@
-# Risk Workspace
+# Riskflow
 
-Risk is a Rust workspace for multi-asset risk checks and offline portfolio
+Riskflow is a Rust workspace for multi-asset risk checks and offline portfolio
 analytics. It is designed as a companion to Orderflow: Orderflow describes
 market state, while Risk decides whether an order can be sent and how much
 exposure a book carries.
