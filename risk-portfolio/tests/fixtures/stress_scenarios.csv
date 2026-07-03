@@ -1,0 +1,5 @@
+scenario,asset_index,return_shift,expected_loss
+equity_down,0,-0.10,0.054
+rates_up,1,-0.05,0.014
+broad_riskoff,0,-0.08,0.058
+broad_riskoff,1,-0.04,0.058

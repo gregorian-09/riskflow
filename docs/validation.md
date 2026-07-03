@@ -1,6 +1,7 @@
 # Validation Pack
 
-The institutional prototype validation pack lives in `risk-pretrade/tests`.
+The institutional prototype validation pack lives in `risk-pretrade/tests` and
+`risk-portfolio/tests`.
 
 ## Golden Pretrade Fixtures
 
@@ -26,6 +27,27 @@ Current scenarios cover:
 - position-limit rejection,
 - fat-finger rejection,
 - v1 option indeterminate behavior.
+
+## Golden Portfolio Stress Fixtures
+
+`risk-portfolio/tests/fixtures/stress_scenarios.csv` defines deterministic
+portfolio stress scenarios with:
+
+- ordered asset indexes,
+- additive return shocks,
+- expected weighted portfolio loss.
+
+The fixture test is:
+
+```bash
+cargo test -p risk-portfolio --test golden_stress
+```
+
+Current scenarios cover:
+
+- single-asset equity drawdown,
+- single-asset rate shock,
+- multi-asset broad risk-off shock.
 
 ## Adapter Example
 

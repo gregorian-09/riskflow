@@ -9,10 +9,10 @@
 //!
 //! # Scope
 //!
-//! v1 includes historical, parametric, and seeded Monte Carlo `VaR`, performance
-//! ratios, drawdown metrics, and trusted cross-currency netting helpers.
-//! Options Greeks stay out of this crate until the isolated options layer
-//! exists.
+//! v1 includes historical, parametric, seeded Monte Carlo, marginal, and
+//! component `VaR`, performance ratios, drawdown metrics, deterministic stress
+//! scenarios, and trusted cross-currency netting helpers. Options Greeks stay
+//! out of this crate until the isolated options layer exists.
 //!
 //! # Features
 //!
@@ -27,4 +27,5 @@ pub mod netting;
 pub mod performance;
 #[cfg(feature = "python")]
 pub mod python;
+pub mod scenario;
 pub mod var;

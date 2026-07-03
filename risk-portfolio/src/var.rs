@@ -1,6 +1,7 @@
 //! Value-at-risk analytics.
 
 use crate::performance::{mean_return, sample_std_dev};
+use nalgebra::{DMatrix, DVector};
 
 const CONFIDENCE_90: f64 = 0.90;
 const CONFIDENCE_95: f64 = 0.95;
@@ -85,6 +86,85 @@ pub fn monte_carlo_var(
     historical_var(&simulated, confidence)
 }
 
+/// Computes marginal parametric `VaR` contributions for weighted assets.
+///
+/// `weights` and `covariance` must describe the same ordered asset universe.
+/// The returned values are the derivative of portfolio `VaR` with respect to
+/// each asset weight under a zero-mean normal approximation.
+#[must_use]
+pub fn marginal_parametric_var(
+    weights: &[f64],
+    covariance: &DMatrix<f64>,
+    confidence: f64,
+) -> Option<Vec<f64>> {
+    let sigma = portfolio_volatility(weights, covariance)?;
+    if sigma == 0.0 {
+        return None;
+    }
+
+    let z = z_score(confidence)?;
+    let weights = DVector::from_column_slice(weights);
+    let covariance_weight = covariance * &weights;
+
+    Some(
+        covariance_weight
+            .iter()
+            .map(|value| z * value / sigma)
+            .collect(),
+    )
+}
+
+/// Computes component parametric `VaR` contributions for weighted assets.
+///
+/// Component contributions are `weight_i * marginal_var_i`; their sum equals
+/// total zero-mean parametric `VaR` within floating-point tolerance.
+#[must_use]
+pub fn component_parametric_var(
+    weights: &[f64],
+    covariance: &DMatrix<f64>,
+    confidence: f64,
+) -> Option<Vec<f64>> {
+    let marginal = marginal_parametric_var(weights, covariance, confidence)?;
+
+    Some(
+        weights
+            .iter()
+            .zip(marginal)
+            .map(|(weight, marginal)| weight * marginal)
+            .collect(),
+    )
+}
+
+/// Computes zero-mean parametric portfolio `VaR` from weights and covariance.
+#[must_use]
+pub fn portfolio_parametric_var(
+    weights: &[f64],
+    covariance: &DMatrix<f64>,
+    confidence: f64,
+) -> Option<f64> {
+    Some(z_score(confidence)? * portfolio_volatility(weights, covariance)?)
+}
+
+fn portfolio_volatility(weights: &[f64], covariance: &DMatrix<f64>) -> Option<f64> {
+    if weights.is_empty()
+        || covariance.nrows() != weights.len()
+        || covariance.ncols() != weights.len()
+        || weights.iter().any(|value| !value.is_finite())
+        || covariance.iter().any(|value| !value.is_finite())
+    {
+        return None;
+    }
+
+    let weights = DVector::from_column_slice(weights);
+    let variance = weights.transpose() * covariance * weights;
+    let variance = variance[(0, 0)];
+    if variance < 0.0 || !variance.is_finite() {
+        return None;
+    }
+
+    Some(variance.sqrt())
+}
+
 fn z_score(confidence: f64) -> Option<f64> {
     let z = if (confidence - CONFIDENCE_90).abs() < CONFIDENCE_EPSILON {
         Z_90
@@ -132,7 +212,12 @@ impl DeterministicRng {
 
 #[cfg(test)]
 mod tests {
-    use super::{SimulationSeed, historical_var, monte_carlo_var, parametric_var};
+    use nalgebra::dmatrix;
+
+    use super::{
+        SimulationSeed, component_parametric_var, historical_var, marginal_parametric_var,
+        monte_carlo_var, parametric_var, portfolio_parametric_var,
+    };
 
     #[test]
     fn historical_var_returns_tail_loss() {
@@ -155,5 +240,24 @@ mod tests {
         let second = monte_carlo_var(0.0, 0.02, 0.95, 1_000, SimulationSeed(42));
 
         assert_eq!(first, second);
+    }
+
+    #[test]
+    fn component_var_sums_to_portfolio_var() {
+        let covariance = dmatrix![0.04, 0.01; 0.01, 0.09];
+        let weights = [0.6, 0.4];
+
+        let portfolio = portfolio_parametric_var(&weights, &covariance, 0.95).unwrap();
+        let components = component_parametric_var(&weights, &covariance, 0.95).unwrap();
+        let component_sum = components.iter().sum::<f64>();
+
+        assert!((portfolio - component_sum).abs() < 1e-12);
+    }
+
+    #[test]
+    fn marginal_var_rejects_shape_mismatch() {
+        let covariance = dmatrix![0.04, 0.01; 0.01, 0.09];
+
+        assert_eq!(marginal_parametric_var(&[0.6], &covariance, 0.95), None);
     }
 }
