@@ -2,7 +2,7 @@
 
 `risk-core` is the shared contract crate for Riskflow. It owns the types that
 must mean the same thing in the pretrade gate, portfolio analytics, benchmark
-harnesses, adapters, validation fixtures, and future bindings.
+harnesses, adapters, validation fixtures, and external integrations.
 
 The crate is intentionally small in behavior and strict in semantics. It does
 not know how to run a pretrade policy, it does not compute portfolio reports,
@@ -194,9 +194,14 @@ price are not the same operational event.
 Use `current_schema(SchemaRecordKind::LimitTable)` when a parser, exporter, or
 adapter needs to declare which schema family it emits.
 
-## Common Extension Points
+## Contributor Maintenance
 
-### Add A New Linear Asset Class
+Most users should not need to modify `risk-core`; it is the shared contract
+crate. Changes here affect semver, schemas, validation fixtures, and downstream
+adapters. Treat additions as public API work and update the linked documentation
+in the same pull request.
+
+### Adding A Linear Asset Class
 
 1. Add an `AssetClass` variant.
 2. Add a spec struct.
@@ -207,7 +212,7 @@ adapter needs to declare which schema family it emits.
 6. Add unit tests and adapter fixtures.
 7. Update this crate guide and the root README scope.
 
-### Add A New External Record Schema
+### Adding An External Record Schema
 
 1. Add a `SchemaRecordKind` variant.
 2. Add a current schema constant.
@@ -230,5 +235,6 @@ adapter needs to declare which schema family it emits.
 ```bash
 cargo test -p risk-core --all-features
 cargo test -p risk-core --test numeric_properties
+cargo run -p risk-core --example reference_data_flow
 RUSTDOCFLAGS="-D warnings" cargo doc -p risk-core --all-features --no-deps
 ```

@@ -49,6 +49,7 @@ contended_updates.p99_9_ns: ...
 
 ```bash
 cargo bench -p risk-bench --bench evaluate -- --test
+cargo run -p risk-bench --example benchmark_fixture
 ```
 
 The Criterion harness is useful during development. The command-line smoke is
@@ -83,9 +84,9 @@ Rows must include:
 
 Laptop and WSL results are development baselines only.
 
-## Extension Points
+## Contributor Maintenance
 
-Add a new benchmark when:
+Add a benchmark when a public runtime characteristic changes:
 
 - a new pretrade check enters the hot path,
 - limit storage changes,

@@ -55,6 +55,16 @@ stale input tests.
 
 ## Documentation Expectations
 
+Public documentation coverage is enforced. Workspace lints deny missing public
+rustdoc, rustdoc builds run with warnings denied, and doctests must compile.
+Every crate must also keep at least one executable example that represents its
+primary public workflow:
+
+- `risk-core`: reference data and trusted market snapshot construction,
+- `risk-pretrade`: end-to-end order-entry adapter evaluation,
+- `risk-portfolio`: portfolio analytics report construction,
+- `risk-bench`: deterministic benchmark fixture construction.
+
 Every user-facing change should update at least one of:
 
 - root README,
@@ -81,6 +91,7 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace --all-features
 cargo test --workspace --examples --all-features
+RUSTDOCFLAGS="-D warnings" cargo test --workspace --doc --all-features
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
 scripts/check_governance.sh
 ```

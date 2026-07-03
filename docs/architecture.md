@@ -17,8 +17,6 @@ flowchart TB
     pretrade --> audit[Audit and observability]
     portfolio --> analytics[VaR, stress, performance]
     bench[risk-bench] --> pretrade
-    options[risk-options deferred] -. trait boundary .-> core
-    ffi[risk-ffi deferred] -. future ABI .-> core
 ```
 
 ## Crate Dependency Contract
@@ -29,17 +27,11 @@ flowchart LR
     pretrade[risk-pretrade]
     portfolio[risk-portfolio]
     bench[risk-bench]
-    options[risk-options deferred]
-    ffi[risk-ffi deferred]
 
     pretrade --> core
     portfolio --> core
     bench --> pretrade
     bench --> core
-    options -.-> core
-    ffi -.-> core
-    ffi -.-> pretrade
-    ffi -.-> portfolio
 ```
 
 Rules:
@@ -48,7 +40,8 @@ Rules:
 - `risk-pretrade` does not depend on `risk-portfolio` or `risk-options`.
 - `risk-portfolio` does not depend on `risk-pretrade` or `risk-options`.
 - `risk-bench` may depend on crates it benchmarks.
-- `risk-options` and `risk-ffi` are deferred.
+- Optional integration crates must stay outside the active runtime dependency
+  path unless they are added through a documented API and schema review.
 
 CI checks that `risk-pretrade` and `risk-portfolio` do not depend on
 `risk-options`.

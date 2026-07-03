@@ -17,7 +17,7 @@ analytics require an explicit seed.
 | `scenario` | deterministic return shocks and named stress scenarios |
 | `netting` | cross-currency helper wrappers around trusted market snapshots |
 | `python` | optional PyO3 wrappers |
-| `greeks` | reserved empty boundary for future options work |
+| `greeks` | documented non-surface for v1 options work |
 
 ## Analytics Flow
 
@@ -178,9 +178,13 @@ assert_eq!(converted, Notional::new(200));
 - `risk-portfolio/tests/fixtures/stress_scenarios.csv`: single and multi-asset
   stress shocks.
 
-## Extension Points
+## Contributor Maintenance
 
-### Add A New Analytics Function
+Most users should consume the existing analytics functions directly. New
+analytics should enter this crate only when their assumptions, input validation,
+and fixture coverage are documented well enough for independent review.
+
+### Adding An Analytics Function
 
 1. Decide whether the compact API should return `Option` or a typed `Result`.
 2. Validate empty, shape-mismatched, and non-finite inputs.
@@ -188,7 +192,7 @@ assert_eq!(converted, Notional::new(200));
 4. Add a golden fixture if the output is externally meaningful.
 5. Document assumptions in `docs/model_validation.md`.
 
-### Add A New Python Binding
+### Adding A Python Binding
 
 1. Gate it behind the existing `python` feature.
 2. Keep the Rust API primary.
@@ -201,4 +205,5 @@ assert_eq!(converted, Notional::new(200));
 cargo test -p risk-portfolio --all-features
 cargo test -p risk-portfolio --test golden_stress
 cargo test -p risk-portfolio --test golden_var
+cargo run -p risk-portfolio --example portfolio_report
 ```

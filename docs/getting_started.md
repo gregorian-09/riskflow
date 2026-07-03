@@ -64,7 +64,7 @@ Read [Architecture](architecture.md) after the first test run. It explains:
 - fail-closed behavior,
 - fixed-point arithmetic,
 - schema policy,
-- deferred crates.
+- active runtime surfaces.
 
 ## 6. Generate Release Evidence
 
