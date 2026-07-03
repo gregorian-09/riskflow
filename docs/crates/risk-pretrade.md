@@ -234,9 +234,14 @@ system they use. The crate intentionally does not depend on a logging runtime.
   scenarios.
 - `risk-pretrade/tests/golden_pretrade.rs`: CSV fixture decisions.
 
-## Extension Points
+## Contributor Maintenance
 
-### Add A New Check
+Most integrations should use the existing `PretradeGate` and limit-source
+surface. Changes to check ordering, fail-closed behavior, or limit parsing are
+policy changes and should include validation fixtures, schema documentation,
+and model-validation notes.
+
+### Adding A Check
 
 1. Add a module under `checks/`.
 2. Keep the function concrete and allocation-free.
@@ -245,7 +250,7 @@ system they use. The crate intentionally does not depend on a logging runtime.
 5. Add unit tests and fixture coverage.
 6. Update this guide and `docs/validation.md`.
 
-### Add A New Limit Record
+### Adding A Limit Record
 
 1. Add storage to `LimitTable`.
 2. Add setter/getter methods.

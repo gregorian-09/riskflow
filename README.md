@@ -1,22 +1,23 @@
 # Riskflow
 
-Riskflow is a Rust workspace for multi-asset pretrade risk checks and offline
-portfolio analytics. It is designed as a companion to Orderflow: Orderflow
-describes market state, while Riskflow decides whether an order can be sent and
-how much exposure a book carries.
+Riskflow is a Rust risk-management workspace for multi-asset pretrade controls,
+trusted market-data handling, audit evidence, and offline portfolio analytics.
+It is built for developers who need deterministic risk decisions in order-entry
+systems and reproducible analytics in validation or reporting workflows.
 
-The project is intentionally split into small crates because the workloads have
-different constraints. The pretrade path is latency-sensitive, fixed-point, and
-fail-closed. The portfolio path is offline, allocation-friendly, and uses
-floating-point statistics.
+The workspace is split by runtime constraint. The pretrade path is synchronous,
+fixed-point, and fail-closed. The portfolio path is batch-oriented,
+allocation-friendly, and explicit about floating-point model assumptions. Shared
+domain contracts live in `risk-core` so adapters, checks, analytics, tests, and
+schemas agree on the same identifiers and verdict semantics.
 
 ## Who Should Start Where
 
 | Reader | Start Here | Then Read |
 |---|---|---|
 | New user | [Getting Started](docs/getting_started.md) | [End-To-End Code Flow](docs/end_to_end_code_flow.md), [Architecture](docs/architecture.md) |
-| Integrating order entry | [risk-pretrade guide](docs/crates/risk-pretrade.md) | [Validation](docs/validation.md), [Observability](docs/observability.md) |
-| Building analytics | [risk-portfolio guide](docs/crates/risk-portfolio.md) | [Model Validation](docs/model_validation.md), [Constants](docs/constants.md) |
+| Integrating order entry | [risk-pretrade README](risk-pretrade/README.md) | [risk-pretrade guide](docs/crates/risk-pretrade.md), [adapter example](risk-pretrade/examples/end_to_end_adapter.rs), [Observability](docs/observability.md) |
+| Building analytics | [risk-portfolio README](risk-portfolio/README.md) | [risk-portfolio guide](docs/crates/risk-portfolio.md), [Model Validation](docs/model_validation.md), [Constants](docs/constants.md) |
 | Reviewing safety | [Architecture](docs/architecture.md) | [Hardening](docs/hardening.md), [Security Review](docs/security_review.md) |
 | Contributing | [Contributing](CONTRIBUTING.md) | [Release Governance](docs/release_governance.md), [Changelog](CHANGELOG.md) |
 | Operating in production | [Operations](docs/operations.md) | [Benchmark Matrix](docs/benchmark_matrix.md), [Schemas](docs/schemas.md) |
@@ -46,17 +47,14 @@ flowchart TB
     pretrade --> audit[Audit and observability events]
     portfolio --> reports[VaR, stress, performance reports]
     bench[risk-bench] --> pretrade
-
-    options[risk-options, deferred] -. trait boundary only .-> core
-    ffi[risk-ffi, deferred] -. future external ABI .-> core
 ```
 
 Core dependency rule:
 
 - `risk-core` defines shared types and never depends on higher-level crates.
 - `risk-pretrade` and `risk-portfolio` depend on `risk-core`.
-- `risk-pretrade` and `risk-portfolio` do not depend on `risk-options`.
-- `risk-options` and `risk-ffi` are intentionally deferred.
+- Optional integrations belong at crate boundaries. The v1 public API is the
+  active workspace shown above.
 
 ## Crates
 
@@ -77,6 +75,7 @@ Read more:
 
 - [risk-core README](risk-core/README.md)
 - [risk-core guide](docs/crates/risk-core.md)
+- [End-to-end code flow](docs/end_to_end_code_flow.md)
 
 ### `risk-pretrade`
 
@@ -97,6 +96,8 @@ Read more:
 - [risk-pretrade README](risk-pretrade/README.md)
 - [risk-pretrade guide](docs/crates/risk-pretrade.md)
 - [End-to-end adapter example](risk-pretrade/examples/end_to_end_adapter.rs)
+- [End-to-end code flow](docs/end_to_end_code_flow.md)
+- [Observability guide](docs/observability.md)
 
 ### `risk-portfolio`
 
@@ -115,6 +116,8 @@ Read more:
 
 - [risk-portfolio README](risk-portfolio/README.md)
 - [risk-portfolio guide](docs/crates/risk-portfolio.md)
+- [Portfolio analytics flow](docs/end_to_end_code_flow.md#portfolio-analytics-flow)
+- [Model validation pack](docs/model_validation.md)
 
 ### `risk-bench`
 
@@ -129,6 +132,7 @@ Read more:
 - [risk-bench README](risk-bench/README.md)
 - [risk-bench guide](docs/crates/risk-bench.md)
 - [Benchmark methodology](docs/benchmarks.md)
+- [Benchmark matrix](docs/benchmark_matrix.md)
 
 ## End-To-End Pretrade Flow
 
@@ -236,8 +240,8 @@ Explicit non-goals:
 - live exchange margin schedule ingestion,
 - AI/ML risk-determining models.
 
-Options exist only as taxonomy placeholders in v1 and intentionally return
-indeterminate risk until a separate options crate is designed.
+Options are represented only as an unsupported v1 instrument taxonomy. They
+return indeterminate risk and must not be treated as approved pretrade coverage.
 
 ## Documentation Index
 

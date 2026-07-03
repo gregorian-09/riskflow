@@ -83,9 +83,9 @@ Rows must include:
 
 Laptop and WSL results are development baselines only.
 
-## Extension Points
+## Contributor Maintenance
 
-Add a new benchmark when:
+Add a benchmark when a public runtime characteristic changes:
 
 - a new pretrade check enters the hot path,
 - limit storage changes,
