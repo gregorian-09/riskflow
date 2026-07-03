@@ -7,6 +7,7 @@ use risk_core::{
     MarketSnapshot, Notional, Price, Qty, SymbolKey, SymbolRegistry, Timestamp,
 };
 use risk_pretrade::{EvaluateRequest, GateAuditRecord, InMemoryAuditLog, LimitTable, PretradeGate};
+use risk_pretrade::{ObservedOrderEvent, TraceContext};
 
 fn main() -> Result<(), AdapterError> {
     let mut audit_log = InMemoryAuditLog::new();
@@ -28,10 +29,20 @@ fn main() -> Result<(), AdapterError> {
 
     let (verdict, audit_record) =
         evaluate_adapter_order(&gate, &registry, &catalog, &market, incoming)?;
+    let observed = ObservedOrderEvent::new(
+        TraceContext {
+            correlation_id: 42,
+            sequence: 1,
+            observed_at: incoming.received_at,
+        },
+        audit_record.clone(),
+        gate.metrics_snapshot(),
+    );
     audit_log.push(GateAuditRecord::OrderEvaluation(audit_record));
 
     println!("verdict={verdict:?}");
     println!("audit_records={}", audit_log.records().len());
+    println!("observed_evaluations={}", observed.metrics.evaluations);
 
     Ok(())
 }

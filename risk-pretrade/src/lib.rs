@@ -17,6 +17,7 @@ pub mod audit;
 pub mod checks;
 pub mod gate;
 pub mod limit_source;
+pub mod observability;
 
 pub use audit::{
     GateAuditRecord, InMemoryAuditLog, LimitChangeAuditRecord, OrderAuditRecord,
@@ -26,4 +27,8 @@ pub use gate::{EvaluateRequest, LimitTable, PretradeGate};
 pub use limit_source::{
     FileLimitSource, LimitSource, ParseLimitTableError, ParseLimitTableErrorKind,
     StaticLimitSource, parse_limit_table,
+};
+pub use observability::{
+    AlertSeverity, GateMetrics, GateMetricsSnapshot, ObservedLimitChangeEvent, ObservedOrderEvent,
+    ObservedTradingStateEvent, PretradeAlert, TraceContext,
 };

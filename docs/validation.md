@@ -1,6 +1,6 @@
 # Validation Pack
 
-The institutional prototype validation pack lives in `risk-pretrade/tests` and
+The institutional validation pack lives in `risk-pretrade/tests` and
 `risk-portfolio/tests`.
 
 ## Golden Pretrade Fixtures
@@ -28,6 +28,24 @@ Current scenarios cover:
 - fat-finger rejection,
 - v1 option indeterminate behavior.
 
+## Adapter Contract and Adversarial Fixtures
+
+`risk-pretrade/tests/adapter_contracts.rs` exercises the external adapter
+contract with:
+
+- real Orderflow `SymbolId` mapping through `risk-core::SymbolKey`,
+- FIX-like order fields converted before gate evaluation,
+- tickbar-like timestamped market snapshots,
+- unknown-symbol fail-closed behavior,
+- stale market-data fail-closed behavior.
+
+`risk-pretrade/tests/adversarial_pretrade.rs` covers:
+
+- minimum signed quantity overflow,
+- degraded upstream market-data flags,
+- stale aggregate quality,
+- disabled-trading rejection precedence.
+
 ## Golden Portfolio Stress Fixtures
 
 `risk-portfolio/tests/fixtures/stress_scenarios.csv` defines deterministic
@@ -48,6 +66,23 @@ Current scenarios cover:
 - single-asset equity drawdown,
 - single-asset rate shock,
 - multi-asset broad risk-off shock.
+
+## Golden Historical VaR Fixtures
+
+`risk-portfolio/tests/fixtures/historical_var.csv` defines longer return
+series for deterministic historical `VaR` validation.
+
+The fixture test is:
+
+```bash
+cargo test -p risk-portfolio --test golden_var
+```
+
+Current scenarios cover:
+
+- calm returns,
+- crisis returns,
+- all-positive returns.
 
 ## Adapter Example
 

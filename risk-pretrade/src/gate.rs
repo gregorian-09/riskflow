@@ -16,6 +16,7 @@ use risk_core::{
 
 use crate::audit::{LimitChangeAuditRecord, OrderAuditRecord, TradingStateAuditRecord};
 use crate::checks::{aggregate_notional, fat_finger, margin, notional, position_limit};
+use crate::observability::{GateMetrics, GateMetricsSnapshot};
 
 /// Immutable pretrade limit table.
 #[derive(Debug, Clone, Default)]
@@ -141,6 +142,7 @@ pub struct EvaluateRequest<'a> {
 pub struct PretradeGate {
     limits: ArcSwap<LimitTable>,
     trading_enabled: AtomicBool,
+    metrics: GateMetrics,
 }
 
 impl PretradeGate {
@@ -150,12 +152,14 @@ impl PretradeGate {
         Self {
             limits: ArcSwap::from_pointee(limits),
             trading_enabled: AtomicBool::new(true),
+            metrics: GateMetrics::default(),
         }
     }
 
     /// Replaces the active limit table snapshot.
     pub fn update_limits(&self, limits: LimitTable) {
         self.limits.store(Arc::new(limits));
+        self.metrics.record_limit_update();
     }
 
     /// Replaces the active limit table snapshot and returns an audit record.
@@ -191,6 +195,7 @@ impl PretradeGate {
         changed_at: Timestamp,
     ) -> TradingStateAuditRecord {
         let previous_enabled = self.trading_enabled.swap(enabled, Ordering::AcqRel);
+        self.metrics.record_trading_state_change();
 
         TradingStateAuditRecord {
             actor: actor.into(),
@@ -233,6 +238,19 @@ impl PretradeGate {
     /// Evaluates an order request.
     #[must_use]
     pub fn evaluate(&self, request: EvaluateRequest<'_>) -> RiskVerdict {
+        let verdict = self.evaluate_decision(request);
+        self.metrics.record_verdict(verdict);
+
+        verdict
+    }
+
+    /// Returns a point-in-time metrics snapshot.
+    #[must_use]
+    pub fn metrics_snapshot(&self) -> GateMetricsSnapshot {
+        self.metrics.snapshot()
+    }
+
+    fn evaluate_decision(&self, request: EvaluateRequest<'_>) -> RiskVerdict {
         if !self.trading_enabled() {
             return RiskVerdict::Reject(RejectReason::TradingDisabled);
         }
@@ -374,6 +392,9 @@ mod tests {
         });
 
         assert_eq!(verdict, RiskVerdict::Pass);
+        let metrics = gate.metrics_snapshot();
+        assert_eq!(metrics.evaluations, 1);
+        assert_eq!(metrics.passes, 1);
     }
 
     #[test]
@@ -415,6 +436,11 @@ mod tests {
                 verdict,
             }
         );
+        let metrics = gate.metrics_snapshot();
+        assert_eq!(metrics.evaluations, 1);
+        assert_eq!(metrics.rejects, 1);
+        assert_eq!(metrics.trading_disabled_rejections, 1);
+        assert_eq!(metrics.trading_state_changes, 1);
     }
 
     #[test]
@@ -427,6 +453,7 @@ mod tests {
         assert_eq!(record.previous.per_order_notional_count, 0);
         assert_eq!(record.current.per_order_notional_count, 1);
         assert!(record.current.aggregate_notional_configured);
+        assert_eq!(gate.metrics_snapshot().limit_updates, 1);
     }
 
     #[test]

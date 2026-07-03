@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use of_core::DataQualityFlags;
+pub use of_core::DataQualityFlags;
 
 use crate::{
     currency::CurrencyPair,

@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use risk_core::{InstrumentId, Notional, Qty};
+use risk_core::{InstrumentId, LIMIT_TABLE_SCHEMA, Notional, Qty, SchemaVersion};
 
 use crate::gate::LimitTable;
 
@@ -68,6 +68,7 @@ impl LimitSource for FileLimitSource {
 /// Supported records:
 ///
 /// ```text
+/// schema_version,1,0,0
 /// aggregate_notional,1000000
 /// per_order_notional,1,10000
 /// max_abs_position,1,500
@@ -88,6 +89,19 @@ pub fn parse_limit_table(contents: &str) -> Result<LimitTable, ParseLimitTableEr
 
         let fields = line.split(',').map(str::trim).collect::<Vec<_>>();
         match fields.as_slice() {
+            ["schema_version", raw_major, raw_minor, raw_patch] => {
+                let writer = SchemaVersion::new(
+                    parse_u16(line_number, raw_major)?,
+                    parse_u16(line_number, raw_minor)?,
+                    parse_u16(line_number, raw_patch)?,
+                );
+                if !LIMIT_TABLE_SCHEMA.can_read(writer) {
+                    return Err(ParseLimitTableError::new(
+                        line_number,
+                        ParseLimitTableErrorKind::UnsupportedSchemaVersion(writer),
+                    ));
+                }
+            }
             ["aggregate_notional", raw_limit] => {
                 limits.set_aggregate_notional(Notional::new(parse_i64(line_number, raw_limit)?));
             }
@@ -146,6 +160,15 @@ fn parse_u32(line: usize, raw: &str) -> Result<u32, ParseLimitTableError> {
     })
 }
 
+fn parse_u16(line: usize, raw: &str) -> Result<u16, ParseLimitTableError> {
+    raw.parse::<u16>().map_err(|_| {
+        ParseLimitTableError::new(
+            line,
+            ParseLimitTableErrorKind::InvalidInteger(raw.to_owned()),
+        )
+    })
+}
+
 /// Error returned when parsing a text limit table fails.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseLimitTableError {
@@ -192,6 +215,8 @@ pub enum ParseLimitTableErrorKind {
     InvalidRecord(String),
     /// Invalid integer field.
     InvalidInteger(String),
+    /// Schema version cannot be read by this crate version.
+    UnsupportedSchemaVersion(SchemaVersion),
 }
 
 impl fmt::Display for ParseLimitTableErrorKind {
@@ -199,6 +224,11 @@ impl fmt::Display for ParseLimitTableErrorKind {
         match self {
             Self::InvalidRecord(record) => write!(f, "invalid record `{record}`"),
             Self::InvalidInteger(value) => write!(f, "invalid integer `{value}`"),
+            Self::UnsupportedSchemaVersion(version) => write!(
+                f,
+                "unsupported schema version {}.{}.{}",
+                version.major, version.minor, version.patch
+            ),
         }
     }
 }
@@ -219,6 +249,7 @@ mod tests {
         let limits = parse_limit_table(
             "
             # v1 static limits
+            schema_version,1,0,0
             aggregate_notional,10000
             per_order_notional,1,1000
             max_abs_position,1,50
@@ -252,6 +283,19 @@ mod tests {
         assert_eq!(
             error.kind(),
             &ParseLimitTableErrorKind::InvalidRecord("unknown".to_owned())
+        );
+    }
+
+    #[test]
+    fn rejects_unsupported_schema_version() {
+        let error = parse_limit_table("schema_version,2,0,0").unwrap_err();
+
+        assert_eq!(error.line(), 1);
+        assert_eq!(
+            error.kind(),
+            &ParseLimitTableErrorKind::UnsupportedSchemaVersion(risk_core::SchemaVersion::new(
+                2, 0, 0
+            ))
         );
     }
 
