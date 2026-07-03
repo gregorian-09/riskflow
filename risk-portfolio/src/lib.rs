@@ -15,7 +15,7 @@
 //!
 //! - `python`: enables optional `pyo3` bindings for notebook consumers.
 //!
-//! # Historical And Monte Carlo VaR
+//! # Historical And Monte Carlo `VaR`
 //!
 //! ```
 //! use risk_portfolio::var::{SimulationSeed, historical_var, monte_carlo_var};
@@ -56,7 +56,7 @@
 //! ```
 
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 pub mod covariance;
 pub mod greeks;

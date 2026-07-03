@@ -75,6 +75,7 @@ Read more:
 
 - [risk-core README](risk-core/README.md)
 - [risk-core guide](docs/crates/risk-core.md)
+- [Reference-data example](risk-core/examples/reference_data_flow.rs)
 - [End-to-end code flow](docs/end_to_end_code_flow.md)
 
 ### `risk-pretrade`
@@ -116,6 +117,7 @@ Read more:
 
 - [risk-portfolio README](risk-portfolio/README.md)
 - [risk-portfolio guide](docs/crates/risk-portfolio.md)
+- [Portfolio report example](risk-portfolio/examples/portfolio_report.rs)
 - [Portfolio analytics flow](docs/end_to_end_code_flow.md#portfolio-analytics-flow)
 - [Model validation pack](docs/model_validation.md)
 
@@ -131,6 +133,7 @@ Read more:
 
 - [risk-bench README](risk-bench/README.md)
 - [risk-bench guide](docs/crates/risk-bench.md)
+- [Benchmark fixture example](risk-bench/examples/benchmark_fixture.rs)
 - [Benchmark methodology](docs/benchmarks.md)
 - [Benchmark matrix](docs/benchmark_matrix.md)
 
@@ -284,6 +287,10 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace --all-features
 cargo test --workspace --examples --all-features
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
+cargo run -p risk-core --example reference_data_flow
+cargo run -p risk-pretrade --example end_to_end_adapter
+cargo run -p risk-portfolio --example portfolio_report
+cargo run -p risk-bench --example benchmark_fixture
 cargo audit --db target/advisory-db
 cargo deny check
 cargo package -p risk-core --allow-dirty

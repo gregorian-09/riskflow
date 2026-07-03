@@ -49,6 +49,7 @@ contended_updates.p99_9_ns: ...
 
 ```bash
 cargo bench -p risk-bench --bench evaluate -- --test
+cargo run -p risk-bench --example benchmark_fixture
 ```
 
 The Criterion harness is useful during development. The command-line smoke is

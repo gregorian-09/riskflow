@@ -8,6 +8,7 @@ out of normal library builds.
 Primary documentation:
 
 - [risk-bench crate guide](https://github.com/gregorian-09/riskflow/blob/master/docs/crates/risk-bench.md)
+- [Benchmark fixture example](https://github.com/gregorian-09/riskflow/blob/master/risk-bench/examples/benchmark_fixture.rs)
 - [Benchmark methodology](https://github.com/gregorian-09/riskflow/blob/master/docs/benchmarks.md)
 - [Benchmark matrix](https://github.com/gregorian-09/riskflow/blob/master/docs/benchmark_matrix.md)
 - [Release governance](https://github.com/gregorian-09/riskflow/blob/master/docs/release_governance.md)
@@ -84,4 +85,5 @@ Each benchmark record should include:
 ```bash
 cargo run -p risk-bench --release -- --iterations 5000
 cargo bench -p risk-bench --bench evaluate -- --test
+cargo run -p risk-bench --example benchmark_fixture
 ```

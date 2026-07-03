@@ -9,6 +9,7 @@ analytics are deterministic through explicit seeds.
 Primary documentation:
 
 - [risk-portfolio crate guide](https://github.com/gregorian-09/riskflow/blob/master/docs/crates/risk-portfolio.md)
+- [Portfolio report example](https://github.com/gregorian-09/riskflow/blob/master/risk-portfolio/examples/portfolio_report.rs)
 - [Portfolio analytics flow](https://github.com/gregorian-09/riskflow/blob/master/docs/end_to_end_code_flow.md#portfolio-analytics-flow)
 - [Model Validation](https://github.com/gregorian-09/riskflow/blob/master/docs/model_validation.md)
 - [Validation](https://github.com/gregorian-09/riskflow/blob/master/docs/validation.md)
@@ -116,5 +117,6 @@ assert_eq!(results[0].name, "broad_riskoff");
 
 ```bash
 cargo test -p risk-portfolio --all-features
+cargo run -p risk-portfolio --example portfolio_report
 RUSTDOCFLAGS="-D warnings" cargo doc -p risk-portfolio --all-features --no-deps
 ```

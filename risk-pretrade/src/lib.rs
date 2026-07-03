@@ -61,7 +61,7 @@
 //! telemetry stack.
 
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 pub mod audit;
 pub mod checks;

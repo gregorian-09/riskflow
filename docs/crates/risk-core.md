@@ -235,5 +235,6 @@ in the same pull request.
 ```bash
 cargo test -p risk-core --all-features
 cargo test -p risk-core --test numeric_properties
+cargo run -p risk-core --example reference_data_flow
 RUSTDOCFLAGS="-D warnings" cargo doc -p risk-core --all-features --no-deps
 ```

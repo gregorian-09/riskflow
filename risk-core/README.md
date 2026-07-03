@@ -12,6 +12,7 @@ external adapters.
 Primary documentation:
 
 - [risk-core crate guide](https://github.com/gregorian-09/riskflow/blob/master/docs/crates/risk-core.md)
+- [Reference-data example](https://github.com/gregorian-09/riskflow/blob/master/risk-core/examples/reference_data_flow.rs)
 - [End-to-end code flow](https://github.com/gregorian-09/riskflow/blob/master/docs/end_to_end_code_flow.md)
 - [Architecture](https://github.com/gregorian-09/riskflow/blob/master/docs/architecture.md)
 - [Schema and migration policy](https://github.com/gregorian-09/riskflow/blob/master/docs/schemas.md)
@@ -129,5 +130,6 @@ indeterminate reasons.
 
 ```bash
 cargo test -p risk-core --all-features
+cargo run -p risk-core --example reference_data_flow
 RUSTDOCFLAGS="-D warnings" cargo doc -p risk-core --all-features --no-deps
 ```

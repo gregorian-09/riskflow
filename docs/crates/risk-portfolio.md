@@ -205,4 +205,5 @@ and fixture coverage are documented well enough for independent review.
 cargo test -p risk-portfolio --all-features
 cargo test -p risk-portfolio --test golden_stress
 cargo test -p risk-portfolio --test golden_var
+cargo run -p risk-portfolio --example portfolio_report
 ```
